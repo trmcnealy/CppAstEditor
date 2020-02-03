@@ -1,0 +1,40 @@
+﻿<UserControl x:Name="ThisEditableTextBlock"
+             x:Class="CppAstEditor.EditableTextBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="30"
+             d:DesignWidth="200">
+    <Grid>
+         <TextBlock x:Name="DisplayBox" 
+                    Text="{Binding Text, ElementName=ThisEditableTextBlock}" 
+                    PreviewMouseDown="DisplayBox_MouseDown" 
+                    Cursor="IBeam" 
+                    FontFamily="{Binding FontFamily, ElementName=ThisEditableTextBlock}" 
+                    FontSize="{Binding FontSize, ElementName=ThisEditableTextBlock}" 
+                    FontStretch="{Binding FontStretch, ElementName=ThisEditableTextBlock}" 
+                    FontStyle="{Binding FontStyle, ElementName=ThisEditableTextBlock}" 
+                    FontWeight="{Binding FontWeight, ElementName=ThisEditableTextBlock}" 
+                    TextAlignment="{Binding TextAlignment, ElementName=ThisEditableTextBlock}" 
+                    TextDecorations="{Binding TextDecorations, ElementName=ThisEditableTextBlock}" 
+                    TextEffects="{Binding TextEffects, ElementName=ThisEditableTextBlock}" 
+                    TextTrimming="{Binding TextTrimming, ElementName=ThisEditableTextBlock}" 
+                    TextWrapping="{Binding TextWrapping, ElementName=ThisEditableTextBlock}"/> 
+
+         <TextBox x:Name="EditBox" 
+                  Text="{Binding Text, Mode=TwoWay, ElementName=ThisEditableTextBlock}" 
+                  Visibility="Collapsed" 
+                  PreviewKeyDown="EditBox_PreviewKeyDown"
+                  TextChanged="EditBox_TextChanged"
+                  FontFamily="{Binding FontFamily, ElementName=ThisEditableTextBlock}" 
+                  FontSize="{Binding FontSize, ElementName=ThisEditableTextBlock}" 
+                  FontStretch="{Binding FontStretch, ElementName=ThisEditableTextBlock}" 
+                  FontStyle="{Binding FontStyle, ElementName=ThisEditableTextBlock}" 
+                  FontWeight="{Binding FontWeight, ElementName=ThisEditableTextBlock}" 
+                  TextAlignment="{Binding TextAlignment, ElementName=ThisEditableTextBlock}" 
+                  TextDecorations="{Binding TextDecorations, ElementName=ThisEditableTextBlock}" 
+                  TextWrapping="{Binding TextWrapping, ElementName=ThisEditableTextBlock}"/> 
+    </Grid>
+</UserControl>

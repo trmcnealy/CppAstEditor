@@ -1,0 +1,88 @@
+{
+  "format": 1,
+  "restore": {
+    "D:\\TFS_Sources\\Github\\Compilation\\trmcnealy\\CppAstEditor\\CppAstEditor\\CppAstEditor.csproj": {}
+  },
+  "projects": {
+    "D:\\TFS_Sources\\Github\\Compilation\\trmcnealy\\CppAstEditor\\CppAstEditor\\CppAstEditor.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "D:\\TFS_Sources\\Github\\Compilation\\trmcnealy\\CppAstEditor\\CppAstEditor\\CppAstEditor.csproj",
+        "projectName": "CppAstEditor",
+        "projectPath": "D:\\TFS_Sources\\Github\\Compilation\\trmcnealy\\CppAstEditor\\CppAstEditor\\CppAstEditor.csproj",
+        "packagesPath": "C:\\Users\\tehgo\\.nuget\\packages\\",
+        "outputPath": "D:\\TFS_Sources\\Github\\Compilation\\trmcnealy\\CppAstEditor\\CppAstEditor\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Users\\tehgo\\.dotnet\\NuGetFallbackFolder",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\tehgo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp3.1"
+        ],
+        "sources": {
+          "C:\\AssemblyCache\\_packages": {},
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json": {},
+          "https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json": {},
+          "https://dotnet.myget.org/F/dotnet-try/api/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp3.1": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "dependencies": {
+            "AvalonEdit": {
+              "target": "Package",
+              "version": "[6.0.1, )"
+            },
+            "CppAst": {
+              "target": "Package",
+              "version": "[0.6.0, )"
+            },
+            "CppAst.CodeGen": {
+              "target": "Package",
+              "version": "[0.4.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.WindowsDesktop.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.WindowsDesktop.App.WPF": {
+              "privateAssets": "none"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.101\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
