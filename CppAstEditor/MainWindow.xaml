@@ -70,6 +70,7 @@
                      Visibility="Visible">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="35"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="5"/>
                         <RowDefinition Height="*"/>
@@ -78,8 +79,12 @@
                         <RowDefinition Height="5"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Button Width="100" Height="25" Content="Import Settings" Margin="5,5,5,5" Click="ImportSettingsCommand_Executed" ></Button>
+                        <Button Width="100" Height="25" Content="Export Settings" Margin="5,5,5,5" Click="ExportSettingsCommand_Executed"></Button>
+                    </StackPanel>
                     <DockPanel LastChildFill="True"
-                               Grid.Row="0"
+                               Grid.Row="1"
                                HorizontalAlignment="Stretch"
                                VerticalAlignment="Stretch"
                                MinHeight="150">
@@ -143,11 +148,11 @@
                             </ListView.View>
                         </ListView>
                     </DockPanel>
-                    <GridSplitter Grid.Row="1"
+                    <GridSplitter Grid.Row="2"
                                   VerticalAlignment="Stretch"
                                   HorizontalAlignment="Stretch"/>
                     <DockPanel LastChildFill="True"
-                               Grid.Row="2"
+                               Grid.Row="3"
                                HorizontalAlignment="Stretch"
                                VerticalAlignment="Stretch"
                                MinHeight="150">
@@ -207,11 +212,11 @@
                         </ListView>
 
                     </DockPanel>
-                    <GridSplitter Grid.Row="3"
+                    <GridSplitter Grid.Row="4"
                                   VerticalAlignment="Stretch"
                                   HorizontalAlignment="Stretch"/>
                     <DockPanel LastChildFill="True"
-                               Grid.Row="4"
+                               Grid.Row="5"
                                HorizontalAlignment="Stretch"
                                VerticalAlignment="Stretch"
                                MinHeight="150">
@@ -270,11 +275,11 @@
                         </ListView>
 
                     </DockPanel>
-                    <GridSplitter Grid.Row="5"
+                    <GridSplitter Grid.Row="6"
                                   VerticalAlignment="Stretch"
                                   HorizontalAlignment="Stretch"/>
                     <DockPanel LastChildFill="True"
-                               Grid.Row="6"
+                               Grid.Row="7"
                                HorizontalAlignment="Stretch"
                                VerticalAlignment="Stretch"
                                MinHeight="150">

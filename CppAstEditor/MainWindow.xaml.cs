@@ -2,18 +2,24 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Configuration;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Xml.Serialization;
 
 using CppAst;
 using CppAst.CodeGen.Common;
 using CppAst.CodeGen.CSharp;
 
 using ICSharpCode.AvalonEdit.Document;
+
+using Microsoft.Win32;
 
 using Zio;
 using Zio.FileSystems;
@@ -23,6 +29,10 @@ namespace CppAstEditor
     public partial class MainWindow : INotifyPropertyChanged, IDisposable
     {
         private CSharpConverterOptions _converterOptions;
+
+        private TextDocument _cppText = new TextDocument();
+
+        private TextDocument _cSharpText = new TextDocument();
 
         private CSharpConverterOptions ConverterOptions
         {
@@ -36,8 +46,6 @@ namespace CppAstEditor
             }
         }
 
-        private TextDocument _cppText = new TextDocument();
-
         public TextDocument CppText
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -50,8 +58,6 @@ namespace CppAstEditor
             }
         }
 
-        private TextDocument _cSharpText = new TextDocument();
-
         public TextDocument CSharpText
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -62,6 +68,385 @@ namespace CppAstEditor
                 SetProperty(ref _cSharpText,
                             value);
             }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            DataContext = this;
+
+#if DEBUG
+            Settings.Default.SettingsLoaded += Default_SettingsLoaded;
+            Settings.Default.SettingsSaving += Default_SettingsSaving;
+#endif
+
+            ConverterOptions = new CSharpConverterOptions
+            {
+                TypedefCodeGenKind = CppTypedefCodeGenKind.Wrap,
+                TargetCpu          = CppTargetCpu.X86_64,
+                TargetCpuSub       = string.Empty,
+                TargetVendor       = "w64",
+                TargetSystem       = "windows",
+                TargetAbi          = "gnu"
+            };
+
+            Initialize();
+        }
+
+        public void Dispose()
+        {
+            UpdateAndSaveSettings();
+        }
+
+        public void Initialize()
+        {
+            if(Settings.Default.Defines != null)
+            {
+                foreach(string define in Settings.Default.Defines)
+                {
+                    if(!ConverterOptions.Defines.Contains(define))
+                    {
+                        ConverterOptions.Defines.Add(define);
+                    }
+                }
+            }
+            else
+            {
+                Settings.Default.Defines = new StringCollection();
+            }
+
+            if(Settings.Default.AdditionalArguments != null)
+            {
+                foreach(string argument in Settings.Default.AdditionalArguments)
+                {
+                    if(!ConverterOptions.AdditionalArguments.Contains(argument))
+                    {
+                        ConverterOptions.AdditionalArguments.Add(argument);
+                    }
+                }
+            }
+            else
+            {
+                Settings.Default.AdditionalArguments = new StringCollection();
+            }
+
+            if(Settings.Default.IncludeFolders != null)
+            {
+                foreach(string includefolder in Settings.Default.IncludeFolders)
+                {
+                    if(!ConverterOptions.IncludeFolders.Contains(includefolder))
+                    {
+                        ConverterOptions.IncludeFolders.Add(includefolder);
+                    }
+                }
+            }
+            else
+            {
+                Settings.Default.IncludeFolders = new StringCollection();
+            }
+
+            if(Settings.Default.SystemIncludeFolders != null)
+            {
+                foreach(string systeminclude in Settings.Default.SystemIncludeFolders)
+                {
+                    if(!ConverterOptions.SystemIncludeFolders.Contains(systeminclude))
+                    {
+                        ConverterOptions.SystemIncludeFolders.Add(systeminclude);
+                    }
+                }
+            }
+            else
+            {
+                Settings.Default.SystemIncludeFolders = new StringCollection();
+            }
+
+            Defines              = new BindableCollection<string>(ConverterOptions.Defines);
+            IncludeFolders       = new BindableCollection<string>(ConverterOptions.IncludeFolders);
+            AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
+            SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
+        }
+
+        private void Default_SettingsLoaded(object                  sender,
+                                            SettingsLoadedEventArgs e)
+        {
+#if DEBUG
+            Debug.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
+#endif
+        }
+
+        private void Default_SettingsSaving(object          sender,
+                                            CancelEventArgs e)
+        {
+#if DEBUG
+            Debug.WriteLine("Saving app settings.");
+#endif
+        }
+
+        public void UpdateAndSaveSettings()
+        {
+            Settings.Default.Defines.Clear();
+            Settings.Default.Defines.AddRange(ConverterOptions.Defines.Distinct().ToArray());
+
+            Settings.Default.AdditionalArguments.Clear();
+            Settings.Default.AdditionalArguments.AddRange(ConverterOptions.AdditionalArguments.Distinct().ToArray());
+
+            Settings.Default.IncludeFolders.Clear();
+            Settings.Default.IncludeFolders.AddRange(ConverterOptions.IncludeFolders.Distinct().ToArray());
+
+            Settings.Default.SystemIncludeFolders.Clear();
+            Settings.Default.SystemIncludeFolders.AddRange(ConverterOptions.SystemIncludeFolders.Distinct().ToArray());
+
+            Settings.Default.Save();
+        }
+
+        private void ImportSettingsCommand_Executed(object          sender,
+                                                    RoutedEventArgs e)
+        {
+            ImportSettings();
+            Initialize();
+        }
+
+        public void ImportSettings()
+        {
+            OpenFileDialog dlg = new OpenFileDialog
+            {
+                FileName   = "UserSettings",
+                DefaultExt = ".config",
+                Filter     = "User settings|*.config;*.xml"
+            };
+
+            bool? result = dlg.ShowDialog();
+
+            if(result != true)
+            {
+                return;
+            }
+
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
+
+            string filename = dlg.FileName;
+
+            using StreamReader sr = new StreamReader(filename);
+
+            DtoSettings dto = (DtoSettings)xmlSerializer.Deserialize(sr);
+
+            Settings.Default.Defines              = dto.Defines;
+            Settings.Default.AdditionalArguments  = dto.AdditionalArguments;
+            Settings.Default.IncludeFolders       = dto.IncludeFolders;
+            Settings.Default.SystemIncludeFolders = dto.SystemIncludeFolders;
+
+            Settings.Default.Save();
+        }
+
+        private void ExportSettingsCommand_Executed(object          sender,
+                                                    RoutedEventArgs e)
+        {
+            ExportSettings();
+        }
+
+        public void ExportSettings()
+        {
+            SaveFileDialog dlg = new SaveFileDialog
+            {
+                FileName   = "UserSettings",
+                DefaultExt = ".config",
+                Filter     = "User settings|*.config;*.xml"
+            };
+
+            bool? result = dlg.ShowDialog();
+
+            if(result != true)
+            {
+                return;
+            }
+
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
+
+            string filename = dlg.FileName;
+
+            using StreamWriter sw = new StreamWriter(filename);
+
+            xmlSerializer.Serialize(sw,
+                                    new DtoSettings(Settings.Default));
+
+            sw.Flush();
+        }
+
+        private static string ComplieCode(string                 text,
+                                          CSharpConverterOptions options)
+        {
+            string result = string.Empty;
+
+            try
+            {
+                CSharpCompilation csCompilation = CSharpConverter.Convert(text,
+                                                                          options);
+
+                if(!csCompilation.HasErrors)
+                {
+                    MemoryFileSystem fs         = new MemoryFileSystem();
+                    CodeWriter       codeWriter = new CodeWriter(new CodeWriterOptions(fs));
+                    csCompilation.DumpTo(codeWriter);
+
+                    result = fs.ReadAllText(options.DefaultOutputFilePath);
+                }
+                else
+                {
+                    result = csCompilation.Diagnostics.ToString();
+                }
+            }
+            catch(Exception)
+            {
+                // ignored
+            }
+
+            return result;
+        }
+
+        private void CppTextBox_DocumentChanged(object    sender,
+                                                EventArgs e)
+        {
+            if(_cppText.TextLength > 0)
+            {
+                CSharpText.Text = ComplieCode(_cppText.Text,
+                                              ConverterOptions);
+            }
+        }
+
+        private void CppTextBox_TextChanged(object    sender,
+                                            EventArgs e)
+        {
+            if(_cppText.TextLength > 0)
+            {
+                CSharpText.Text = ComplieCode(_cppText.Text,
+                                              ConverterOptions);
+            }
+        }
+
+        private void CSharpText_DocumentChanged(object    sender,
+                                                EventArgs e)
+        {
+        }
+
+        private void DefinesTextBox_TextChanged(object               sender,
+                                                TextChangedEventArgs e)
+        {
+            if(sender is EditableTextBlock textBox && SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
+            {
+                _defines[SelectedDefinesIndex] = textBox.Text;
+            }
+
+            e.Handled = true;
+        }
+
+        private void DefinesAddButton_OnClick(object          sender,
+                                              RoutedEventArgs e)
+        {
+            Defines.Add(string.Empty);
+
+            e.Handled = true;
+        }
+
+        private void DefinesRemoveButton_OnClick(object          sender,
+                                                 RoutedEventArgs e)
+        {
+            if(SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
+            {
+                Defines.RemoveAt(SelectedDefinesIndex);
+            }
+
+            e.Handled = true;
+        }
+
+        private void AdditionalArgumentsTextBox_TextChanged(object               sender,
+                                                            TextChangedEventArgs e)
+        {
+            if(sender is EditableTextBlock textBox && SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
+            {
+                _additionalArguments[SelectedAdditionalArgumentsIndex] = textBox.Text;
+            }
+
+            e.Handled = true;
+        }
+
+        private void AdditionalArgumentsAddButton_OnClick(object          sender,
+                                                          RoutedEventArgs e)
+        {
+            AdditionalArguments.Add(string.Empty);
+
+            e.Handled = true;
+        }
+
+        private void AdditionalArgumentsRemoveButton_OnClick(object          sender,
+                                                             RoutedEventArgs e)
+        {
+            if(SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
+            {
+                AdditionalArguments.RemoveAt(SelectedAdditionalArgumentsIndex);
+            }
+
+            e.Handled = true;
+        }
+
+        private void IncludeFoldersTextBox_TextChanged(object               sender,
+                                                       TextChangedEventArgs e)
+        {
+            if(sender is EditableTextBlock textBox && SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
+            {
+                _includeFolders[SelectedIncludeFoldersIndex] = textBox.Text;
+            }
+
+            e.Handled = true;
+        }
+
+        private void IncludeFoldersAddButton_OnClick(object          sender,
+                                                     RoutedEventArgs e)
+        {
+            IncludeFolders.Add(string.Empty);
+
+            e.Handled = true;
+        }
+
+        private void IncludeFoldersRemoveButton_OnClick(object          sender,
+                                                        RoutedEventArgs e)
+        {
+            if(SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
+            {
+                IncludeFolders.RemoveAt(SelectedIncludeFoldersIndex);
+            }
+
+            e.Handled = true;
+        }
+
+        private void SystemIncludeFoldersTextBox_TextChanged(object               sender,
+                                                             TextChangedEventArgs e)
+        {
+            if(sender is EditableTextBlock textBox && SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
+            {
+                _systemIncludeFolders[SelectedSystemIncludeFoldersIndex] = textBox.Text;
+            }
+
+            e.Handled = true;
+        }
+
+        private void SystemIncludeFoldersAddButton_OnClick(object          sender,
+                                                           RoutedEventArgs e)
+        {
+            SystemIncludeFolders.Add(string.Empty);
+
+            e.Handled = true;
+        }
+
+        private void SystemIncludeFoldersRemoveButton_OnClick(object          sender,
+                                                              RoutedEventArgs e)
+        {
+            if(SelectedSystemIncludeFoldersIndex >= 0 && SelectedSystemIncludeFoldersIndex < SystemIncludeFolders.Count)
+            {
+                SystemIncludeFolders.RemoveAt(SelectedSystemIncludeFoldersIndex);
+            }
+
+            e.Handled = true;
         }
 
         #region Defines
@@ -251,295 +636,6 @@ namespace CppAstEditor
         }
 
         #endregion
-
-        public MainWindow()
-        {
-            InitializeComponent();
-
-            DataContext = this;
-
-#if DEBUG
-            Settings.Default.SettingsLoaded += Default_SettingsLoaded;
-            Settings.Default.SettingsSaving += Default_SettingsSaving;
-#endif
-
-            ConverterOptions = new CSharpConverterOptions()
-            {
-                TypedefCodeGenKind = CppTypedefCodeGenKind.Wrap,
-                TargetCpu          = CppTargetCpu.X86_64,
-                TargetCpuSub       = string.Empty,
-                TargetVendor       = "w64",
-                TargetSystem       = "windows",
-                TargetAbi          = "gnu"
-            };
-
-            if(Settings.Default.Defines != null)
-            {
-                foreach(string define in Settings.Default.Defines)
-                {
-                    ConverterOptions.Defines.Add(define);
-                }
-            }
-            else
-            {
-                Settings.Default.Defines = new StringCollection();
-            }
-
-            if(Settings.Default.AdditionalArguments != null)
-            {
-                foreach(string argument in Settings.Default.AdditionalArguments)
-                {
-                    ConverterOptions.AdditionalArguments.Add(argument);
-                }
-            }
-            else
-            {
-                Settings.Default.AdditionalArguments = new StringCollection();
-            }
-
-            if(Settings.Default.IncludeFolders != null)
-            {
-                foreach(string includefolder in Settings.Default.IncludeFolders)
-                {
-                    ConverterOptions.IncludeFolders.Add(includefolder);
-                }
-            }
-            else
-            {
-                Settings.Default.IncludeFolders = new StringCollection();
-            }
-
-            if(Settings.Default.SystemIncludeFolders != null)
-            {
-                foreach(string systeminclude in Settings.Default.SystemIncludeFolders)
-                {
-                    ConverterOptions.SystemIncludeFolders.Add(systeminclude);
-                }
-            }
-            else
-            {
-                Settings.Default.SystemIncludeFolders = new StringCollection();
-            }
-
-            Defines              = new BindableCollection<string>(ConverterOptions.Defines);
-            IncludeFolders       = new BindableCollection<string>(ConverterOptions.IncludeFolders);
-            AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
-            SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
-        }
-
-        private void Default_SettingsLoaded(object                                       sender,
-                                            System.Configuration.SettingsLoadedEventArgs e)
-        {
-#if DEBUG
-            Debug.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
-#endif
-        }
-
-        private void Default_SettingsSaving(object          sender,
-                                            CancelEventArgs e)
-        {
-#if DEBUG
-            Debug.WriteLine("Saving app settings.");
-#endif
-        }
-
-        public void Dispose()
-        {
-            UpdateAndSaveSettings();
-        }
-
-        public void UpdateAndSaveSettings()
-        {
-            Settings.Default.Defines.Clear();
-            Settings.Default.Defines.AddRange(ConverterOptions.Defines.ToArray());
-
-            Settings.Default.AdditionalArguments.Clear();
-            Settings.Default.AdditionalArguments.AddRange(ConverterOptions.AdditionalArguments.ToArray());
-
-            Settings.Default.IncludeFolders.Clear();
-            Settings.Default.IncludeFolders.AddRange(ConverterOptions.IncludeFolders.ToArray());
-
-            Settings.Default.SystemIncludeFolders.Clear();
-            Settings.Default.SystemIncludeFolders.AddRange(ConverterOptions.SystemIncludeFolders.ToArray());
-
-            Settings.Default.Save();
-        }
-
-        private static string ComplieCode(string                 text,
-                                          CSharpConverterOptions options)
-        {
-            string result = string.Empty;
-
-            try
-            {
-                CSharpCompilation csCompilation = CSharpConverter.Convert(text,
-                                                                          options);
-
-                if(!csCompilation.HasErrors)
-                {
-                    MemoryFileSystem fs         = new MemoryFileSystem();
-                    CodeWriter       codeWriter = new CodeWriter(new CodeWriterOptions(fs));
-                    csCompilation.DumpTo(codeWriter);
-
-                    result = fs.ReadAllText(options.DefaultOutputFilePath);
-                }
-                else
-                {
-                    result = csCompilation.Diagnostics.ToString();
-                }
-            }
-            catch(Exception)
-            {
-                // ignored
-            }
-
-            return result;
-        }
-
-        private void CppTextBox_DocumentChanged(object    sender,
-                                                EventArgs e)
-        {
-            if(_cppText.TextLength > 0)
-            {
-                CSharpText.Text = ComplieCode(_cppText.Text,
-                                              ConverterOptions);
-            }
-        }
-
-        private void CppTextBox_TextChanged(object    sender,
-                                            EventArgs e)
-        {
-            if(_cppText.TextLength > 0)
-            {
-                CSharpText.Text = ComplieCode(_cppText.Text,
-                                              ConverterOptions);
-            }
-        }
-
-        private void CSharpText_DocumentChanged(object    sender,
-                                                EventArgs e)
-        {
-        }
-
-        private void DefinesTextBox_TextChanged(object               sender,
-                                                TextChangedEventArgs e)
-        {
-            if(sender is EditableTextBlock textBox && SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
-            {
-                _defines[SelectedDefinesIndex] = textBox.Text;
-            }
-
-            e.Handled = true;
-        }
-
-        private void DefinesAddButton_OnClick(object          sender,
-                                              RoutedEventArgs e)
-        {
-            Defines.Add(string.Empty);
-
-            e.Handled = true;
-        }
-
-        private void DefinesRemoveButton_OnClick(object          sender,
-                                                 RoutedEventArgs e)
-        {
-            if(SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
-            {
-                Defines.RemoveAt(SelectedDefinesIndex);
-            }
-
-            e.Handled = true;
-        }
-
-        private void AdditionalArgumentsTextBox_TextChanged(object               sender,
-                                                            TextChangedEventArgs e)
-        {
-            if(sender is EditableTextBlock textBox && SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
-            {
-                _additionalArguments[SelectedAdditionalArgumentsIndex] = textBox.Text;
-            }
-
-            e.Handled = true;
-        }
-
-        private void AdditionalArgumentsAddButton_OnClick(object          sender,
-                                                          RoutedEventArgs e)
-        {
-            AdditionalArguments.Add(string.Empty);
-
-            e.Handled = true;
-        }
-
-        private void AdditionalArgumentsRemoveButton_OnClick(object          sender,
-                                                             RoutedEventArgs e)
-        {
-            if(SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
-            {
-                AdditionalArguments.RemoveAt(SelectedAdditionalArgumentsIndex);
-            }
-
-            e.Handled = true;
-        }
-
-        private void IncludeFoldersTextBox_TextChanged(object               sender,
-                                                       TextChangedEventArgs e)
-        {
-            if(sender is EditableTextBlock textBox && SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
-            {
-                _includeFolders[SelectedIncludeFoldersIndex] = textBox.Text;
-            }
-
-            e.Handled = true;
-        }
-
-        private void IncludeFoldersAddButton_OnClick(object          sender,
-                                                     RoutedEventArgs e)
-        {
-            IncludeFolders.Add(string.Empty);
-
-            e.Handled = true;
-        }
-
-        private void IncludeFoldersRemoveButton_OnClick(object          sender,
-                                                        RoutedEventArgs e)
-        {
-            if(SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
-            {
-                IncludeFolders.RemoveAt(SelectedIncludeFoldersIndex);
-            }
-
-            e.Handled = true;
-        }
-
-        private void SystemIncludeFoldersTextBox_TextChanged(object               sender,
-                                                             TextChangedEventArgs e)
-        {
-            if(sender is EditableTextBlock textBox && SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
-            {
-                _systemIncludeFolders[SelectedSystemIncludeFoldersIndex] = textBox.Text;
-            }
-
-            e.Handled = true;
-        }
-
-        private void SystemIncludeFoldersAddButton_OnClick(object          sender,
-                                                           RoutedEventArgs e)
-        {
-            SystemIncludeFolders.Add(string.Empty);
-
-            e.Handled = true;
-        }
-
-        private void SystemIncludeFoldersRemoveButton_OnClick(object          sender,
-                                                              RoutedEventArgs e)
-        {
-            if(SelectedSystemIncludeFoldersIndex >= 0 && SelectedSystemIncludeFoldersIndex < SystemIncludeFolders.Count)
-            {
-                SystemIncludeFolders.RemoveAt(SelectedSystemIncludeFoldersIndex);
-            }
-
-            e.Handled = true;
-        }
 
         #region Binding
 

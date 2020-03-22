@@ -6,6 +6,11 @@
     <UseWPF>true</UseWPF>
     <StartupObject>CppAstEditor.App</StartupObject>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <TieredCompilationQuickJit>false</TieredCompilationQuickJit>
+    <TieredCompilation>false</TieredCompilation>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunEmitSymbols>true</PublishReadyToRunEmitSymbols>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
