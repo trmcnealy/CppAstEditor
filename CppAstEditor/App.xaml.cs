@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 
 namespace CppAstEditor
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public partial class App
     {
         private MainWindow _mainWindow;
 
@@ -25,8 +19,11 @@ namespace CppAstEditor
 
         protected override void OnExit(ExitEventArgs e)
         {
-            _mainWindow.UpdateAndSaveSettings();
             base.OnExit(e);
+
+            _mainWindow.UpdateAndSaveSettings();
+
+            e.ApplicationExitCode = 0;
         }
     }
 }

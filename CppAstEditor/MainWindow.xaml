@@ -6,28 +6,44 @@
         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
         xmlns:local="clr-namespace:CppAstEditor"
         xmlns:system="clr-namespace:System;assembly=System.Runtime"
+        xmlns:cppAst="clr-namespace:CppAst;assembly=CppAst"
+        xmlns:interopServices="clr-namespace:System.Runtime.InteropServices;assembly=System.Runtime"
+        xmlns:cSharp="clr-namespace:CppAst.CodeGen.CSharp;assembly=CppAst.CodeGen"
         mc:Ignorable="d"
         Title="CppAst Editor"
-        Height="800"
+        Height="900"
         Width="1500"
         d:DesignWidth="500"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <!--<Style x:Key="ListBoxTextStyle"
-               TargetType="{x:Type local:EditableTextBlock}">
-            <Style.Triggers>
-                <DataTrigger
-                    Binding="{Binding
-                        RelativeSource={RelativeSource
-                            Mode=FindAncestor,
-                            AncestorType={x:Type ListBoxItem}},
-                            Path=IsSelected}"
-                    Value="True">
-                    <Setter Property="Background"
-                            Value="Red"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>-->
+        <ObjectDataProvider MethodName="GetValues"
+                            ObjectType="{x:Type system:Enum}"
+                            x:Key="CppTargetCpuValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="cppAst:CppTargetCpu"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider MethodName="GetValues"
+                            ObjectType="{x:Type system:Enum}"
+                            x:Key="CharSetValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="interopServices:CharSet"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider MethodName="GetValues"
+                            ObjectType="{x:Type system:Enum}"
+                            x:Key="CppTypedefCodeGenKindValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="cSharp:CppTypedefCodeGenKind"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider MethodName="GetValues"
+                            ObjectType="{x:Type system:Enum}"
+                            x:Key="CSharpUnmanagedKindValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="cSharp:CSharpUnmanagedKind"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
     </Window.Resources>
     <Grid>
         <TabControl>
@@ -69,275 +85,390 @@
             <TabItem Header="Options"
                      Visibility="Visible">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="35"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <Button Width="100" Height="25" Content="Import Settings" Margin="5,5,5,5" Click="ImportSettingsCommand_Executed" ></Button>
-                        <Button Width="100" Height="25" Content="Export Settings" Margin="5,5,5,5" Click="ExportSettingsCommand_Executed"></Button>
-                    </StackPanel>
-                    <DockPanel LastChildFill="True"
-                               Grid.Row="1"
-                               HorizontalAlignment="Stretch"
-                               VerticalAlignment="Stretch"
-                               MinHeight="150">
-                        <Label Content="Defines"
-                               DockPanel.Dock="Top"/>
-                        <StackPanel DockPanel.Dock="Top"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch">
-                            <Button Click="DefinesAddButton_OnClick"
-                                    Content="+"
-                                    Width="20"
-                                    Margin="0,0,3,0"
-                                    HorizontalAlignment="Left"/>
-                            <Button Click="DefinesRemoveButton_OnClick"
-                                    Content="-"
-                                    Width="20"
-                                    Margin="3,0,0,0"
-                                    HorizontalAlignment="Left"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="35"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="5"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0"
+                                    Orientation="Horizontal">
+                            <Button Width="100"
+                                    Height="25"
+                                    Content="Import Settings"
+                                    Margin="5,5,5,5"
+                                    Click="ImportSettingsCommand_Executed"/>
+                            <Button Width="100"
+                                    Height="25"
+                                    Content="Export Settings"
+                                    Margin="5,5,5,5"
+                                    Click="ExportSettingsCommand_Executed"/>
                         </StackPanel>
-                        <ListView x:Name="DefinesListBox"
-                                  IsSynchronizedWithCurrentItem="True"
-                                  ItemsSource="{Binding Path=Defines,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  SelectedIndex="{Binding Path=SelectedDefinesIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  HorizontalContentAlignment="Stretch"
-                                  SelectionMode="Extended"
-                                  Width="Auto"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                            <ListView.Resources>
-                                <Style TargetType="GridViewColumnHeader">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
-                                </Style>
-                            </ListView.Resources>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="HorizontalContentAlignment"
-                                            Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Width="{Binding Width, ElementName=DefinesListBox}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <local:EditableTextBlock HorizontalAlignment="Stretch"
-                                                                         TextChanged="DefinesTextBox_TextChanged">
-                                                    <local:EditableTextBlock.Text>
-                                                        <Binding Path="Content"
-                                                                 FallbackValue=""
-                                                                 RelativeSource="{RelativeSource TemplatedParent}"
-                                                                 Mode="TwoWay"
-                                                                 UpdateSourceTrigger="PropertyChanged"/>
-                                                    </local:EditableTextBlock.Text>
-                                                </local:EditableTextBlock>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </DockPanel>
-                    <GridSplitter Grid.Row="2"
+                        <DockPanel LastChildFill="True"
+                                   Grid.Row="1"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
+                                   MinHeight="150">
+                            <Label Content="Defines"
+                                   DockPanel.Dock="Top"/>
+                            <StackPanel DockPanel.Dock="Top"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch">
+                                <Button Click="DefinesAddButton_OnClick"
+                                        Content="+"
+                                        Width="20"
+                                        Margin="0,0,3,0"
+                                        HorizontalAlignment="Left"/>
+                                <Button Click="DefinesRemoveButton_OnClick"
+                                        Content="-"
+                                        Width="20"
+                                        Margin="3,0,0,0"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <ListView x:Name="DefinesListBox"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      ItemsSource="{Binding Path=Defines,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      SelectedIndex="{Binding Path=SelectedDefinesIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      HorizontalContentAlignment="Stretch"
+                                      SelectionMode="Extended"
+                                      Width="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListView.Resources>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                    </Style>
+                                </ListView.Resources>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}">
+                                        <Setter Property="HorizontalContentAlignment"
+                                                Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="{Binding Width, ElementName=DefinesListBox}">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <local:EditableTextBlock HorizontalAlignment="Stretch"
+                                                                             TextChanged="DefinesTextBox_TextChanged">
+                                                        <local:EditableTextBlock.Text>
+                                                            <Binding Path="Content"
+                                                                     FallbackValue=""
+                                                                     RelativeSource="{RelativeSource TemplatedParent}"
+                                                                     Mode="TwoWay"
+                                                                     UpdateSourceTrigger="PropertyChanged"/>
+                                                        </local:EditableTextBlock.Text>
+                                                    </local:EditableTextBlock>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                        <GridSplitter Grid.Row="2"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalAlignment="Stretch"/>
+                        <DockPanel LastChildFill="True"
+                                   Grid.Row="3"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
+                                   MinHeight="150">
+                            <Label Content="Additional Arguments"
+                                   DockPanel.Dock="Top"/>
+
+                            <StackPanel Orientation="Horizontal"
+                                        DockPanel.Dock="Top"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch">
+                                <Button Click="AdditionalArgumentsAddButton_OnClick"
+                                        Content="+"
+                                        Width="20"
+                                        Margin="0,0,3,0"
+                                        HorizontalAlignment="Left"/>
+                                <Button Click="AdditionalArgumentsRemoveButton_OnClick"
+                                        Content="-"
+                                        Width="20"
+                                        Margin="3,0,0,0"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <ListView x:Name="AdditionalArgumentsListBox"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      ItemsSource="{Binding Path=AdditionalArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      SelectedIndex="{Binding Path=SelectedAdditionalArgumentsIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      HorizontalContentAlignment="Stretch"
+                                      SelectionMode="Extended"
+                                      Width="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListView.Resources>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                    </Style>
+                                </ListView.Resources>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}">
+                                        <Setter Property="HorizontalContentAlignment"
+                                                Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="{Binding Width, ElementName=AdditionalArgumentsListBox}">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <local:EditableTextBlock
+                                                        Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                                        HorizontalAlignment="Stretch"
+                                                        TextChanged="AdditionalArgumentsTextBox_TextChanged"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                        </DockPanel>
+                        <GridSplitter Grid.Row="4"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalAlignment="Stretch"/>
+                        <DockPanel LastChildFill="True"
+                                   Grid.Row="5"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
+                                   MinHeight="150">
+                            <Label Content="Include Folders"
+                                   DockPanel.Dock="Top"/>
+                            <StackPanel Orientation="Horizontal"
+                                        DockPanel.Dock="Top"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch">
+                                <Button Click="IncludeFoldersAddButton_OnClick"
+                                        Content="+"
+                                        Width="20"
+                                        Margin="0,0,3,0"
+                                        HorizontalAlignment="Left"/>
+                                <Button Click="IncludeFoldersRemoveButton_OnClick"
+                                        Content="-"
+                                        Width="20"
+                                        Margin="3,0,0,0"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <ListView x:Name="IncludeFoldersListBox"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      ItemsSource="{Binding Path=IncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      SelectedIndex="{Binding Path=SelectedIncludeFoldersIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      HorizontalContentAlignment="Stretch"
+                                      SelectionMode="Extended"
+                                      Width="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListView.Resources>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                    </Style>
+                                </ListView.Resources>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}">
+                                        <Setter Property="HorizontalContentAlignment"
+                                                Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="{Binding Width, ElementName=IncludeFoldersListBox}">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <local:EditableTextBlock
+                                                        Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                                        HorizontalAlignment="Stretch"
+                                                        TextChanged="IncludeFoldersTextBox_TextChanged"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                        </DockPanel>
+                        <GridSplitter Grid.Row="6"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalAlignment="Stretch"/>
+                        <DockPanel LastChildFill="True"
+                                   Grid.Row="7"
+                                   Grid.Column="0"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
+                                   MinHeight="150">
+                            <Label Content="System Include Folders"
+                                   DockPanel.Dock="Top"/>
+                            <StackPanel Orientation="Horizontal"
+                                        DockPanel.Dock="Top"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Stretch">
+                                <Button Click="SystemIncludeFoldersAddButton_OnClick"
+                                        Content="+"
+                                        Width="20"
+                                        Margin="0,0,3,0"
+                                        HorizontalAlignment="Left"/>
+                                <Button Click="SystemIncludeFoldersRemoveButton_OnClick"
+                                        Content="-"
+                                        Width="20"
+                                        Margin="3,0,0,0"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <ListView x:Name="SystemIncludeFoldersListBox"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      ItemsSource="{Binding Path=SystemIncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      SelectedIndex="{Binding Path=SelectedSystemIncludeFoldersIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                      HorizontalContentAlignment="Stretch"
+                                      SelectionMode="Extended"
+                                      Width="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListView.Resources>
+                                    <Style TargetType="GridViewColumnHeader">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                    </Style>
+                                </ListView.Resources>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="{x:Type ListViewItem}">
+                                        <Setter Property="HorizontalContentAlignment"
+                                                Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="{Binding Width, ElementName=SystemIncludeFoldersListBox}">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <local:EditableTextBlock
+                                                        Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                                        HorizontalAlignment="Stretch"
+                                                        TextChanged="SystemIncludeFoldersTextBox_TextChanged"/>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </Grid>
+
+                    <GridSplitter Grid.Column="1"
                                   VerticalAlignment="Stretch"
                                   HorizontalAlignment="Stretch"/>
-                    <DockPanel LastChildFill="True"
-                               Grid.Row="3"
-                               HorizontalAlignment="Stretch"
-                               VerticalAlignment="Stretch"
-                               MinHeight="150">
-                        <Label Content="Additional Arguments"
-                               DockPanel.Dock="Top"/>
 
-                        <StackPanel Orientation="Horizontal"
-                                    DockPanel.Dock="Top"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch">
-                            <Button Click="AdditionalArgumentsAddButton_OnClick"
-                                    Content="+"
-                                    Width="20"
-                                    Margin="0,0,3,0"
-                                    HorizontalAlignment="Left"/>
-                            <Button Click="AdditionalArgumentsRemoveButton_OnClick"
-                                    Content="-"
-                                    Width="20"
-                                    Margin="3,0,0,0"
-                                    HorizontalAlignment="Left"/>
-                        </StackPanel>
-                        <ListView x:Name="AdditionalArgumentsListBox"
-                                  IsSynchronizedWithCurrentItem="True"
-                                  ItemsSource="{Binding Path=AdditionalArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  SelectedIndex="{Binding Path=SelectedAdditionalArgumentsIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  HorizontalContentAlignment="Stretch"
-                                  SelectionMode="Extended"
-                                  Width="Auto"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                            <ListView.Resources>
-                                <Style TargetType="GridViewColumnHeader">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
-                                </Style>
-                            </ListView.Resources>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="HorizontalContentAlignment"
-                                            Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Width="{Binding Width, ElementName=AdditionalArgumentsListBox}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <local:EditableTextBlock
-                                                    Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                    HorizontalAlignment="Stretch"
-                                                    TextChanged="AdditionalArgumentsTextBox_TextChanged"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
+                    <ScrollViewer Grid.Column="2"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Orientation="Vertical">
+                            <Label Content="TargetCpu"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
+                                      SelectedValue="{Binding Path=TargetCpu,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="TargetCpuSub"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
+                                      SelectedValue="{Binding Path=TargetCpuSub,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="TargetVendor"/>
+                            <TextBox Text="{Binding Path=TargetVendor,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="TargetSystem"/>
+                            <TextBox Text="{Binding Path=TargetSystem,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="TargetAbi"/>
+                            <TextBox Text="{Binding Path=TargetAbi,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=ParseAsCpp,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="ParseAsCpp"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=ParseComments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="ParseComments"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=ParseMacros,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="ParseMacros"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=AutoSquashTypedef,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="AutoSquashTypedef"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=ParseSystemIncludes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="ParseSystemIncludes"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=ParseAttributes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="ParseAttributes"/>
+                            </StackPanel>
 
-                    </DockPanel>
-                    <GridSplitter Grid.Row="4"
-                                  VerticalAlignment="Stretch"
-                                  HorizontalAlignment="Stretch"/>
-                    <DockPanel LastChildFill="True"
-                               Grid.Row="5"
-                               HorizontalAlignment="Stretch"
-                               VerticalAlignment="Stretch"
-                               MinHeight="150">
-                        <Label Content="Include Folders"
-                               DockPanel.Dock="Top"/>
-                        <StackPanel Orientation="Horizontal"
-                                    DockPanel.Dock="Top"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch">
-                            <Button Click="IncludeFoldersAddButton_OnClick"
-                                    Content="+"
-                                    Width="20"
-                                    Margin="0,0,3,0"
-                                    HorizontalAlignment="Left"/>
-                            <Button Click="IncludeFoldersRemoveButton_OnClick"
-                                    Content="-"
-                                    Width="20"
-                                    Margin="3,0,0,0"
-                                    HorizontalAlignment="Left"/>
-                        </StackPanel>
-                        <ListView x:Name="IncludeFoldersListBox"
-                                  IsSynchronizedWithCurrentItem="True"
-                                  ItemsSource="{Binding Path=IncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  SelectedIndex="{Binding Path=SelectedIncludeFoldersIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  HorizontalContentAlignment="Stretch"
-                                  SelectionMode="Extended"
-                                  Width="Auto"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                            <ListView.Resources>
-                                <Style TargetType="GridViewColumnHeader">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
-                                </Style>
-                            </ListView.Resources>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="HorizontalContentAlignment"
-                                            Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Width="{Binding Width, ElementName=IncludeFoldersListBox}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <local:EditableTextBlock
-                                                    Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                    HorizontalAlignment="Stretch"
-                                                    TextChanged="IncludeFoldersTextBox_TextChanged"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
+                            <Label Content="TypedefCodeGenKind"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CppTypedefCodeGenKindValues}}"
+                                      SelectedValue="{Binding Path=TypedefCodeGenKind,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="DefaultOutputFilePath"/>
+                            <TextBox Text="{Binding Path=DefaultOutputFilePath,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="DefaultNamespace"/>
+                            <TextBox Text="{Binding Path=DefaultNamespace,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="DefaultClassLib"/>
+                            <TextBox Text="{Binding Path=DefaultClassLib,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="DefaultDllImportNameAndArguments"/>
+                            <TextBox Text="{Binding Path=DefaultDllImportNameAndArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
 
-                    </DockPanel>
-                    <GridSplitter Grid.Row="6"
-                                  VerticalAlignment="Stretch"
-                                  HorizontalAlignment="Stretch"/>
-                    <DockPanel LastChildFill="True"
-                               Grid.Row="7"
-                               HorizontalAlignment="Stretch"
-                               VerticalAlignment="Stretch"
-                               MinHeight="150">
-                        <Label Content="System Include Folders"
-                               DockPanel.Dock="Top"/>
-                        <StackPanel Orientation="Horizontal"
-                                    DockPanel.Dock="Top"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch">
-                            <Button Click="SystemIncludeFoldersAddButton_OnClick"
-                                    Content="+"
-                                    Width="20"
-                                    Margin="0,0,3,0"
-                                    HorizontalAlignment="Left"/>
-                            <Button Click="SystemIncludeFoldersRemoveButton_OnClick"
-                                    Content="-"
-                                    Width="20"
-                                    Margin="3,0,0,0"
-                                    HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=AllowFixedSizeBuffers,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="AllowFixedSizeBuffers"/>
+                            </StackPanel>
+                            <Label Content="DefaultCharSet"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CharSetValues}}"
+                                      SelectedValue="{Binding Path=DefaultCharSet,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=DispatchOutputPerInclude,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="DispatchOutputPerInclude"/>
+                            </StackPanel>
+                            <Label Content="DefaultMarshalForString"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
+                                      SelectedValue="{Binding Path=DefaultMarshalForString,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                            <Label Content="DefaultMarshalForBool"/>
+                            <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
+                                      SelectedValue="{Binding Path=DefaultMarshalForBool,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=GenerateAsInternal,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="GenerateAsInternal"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding Path=GenerateEnumItemAsFields,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                          VerticalContentAlignment="Center"/>
+                                <Label Content="GenerateEnumItemAsFields"/>
+                            </StackPanel>
                         </StackPanel>
-                        <ListView x:Name="SystemIncludeFoldersListBox"
-                                  IsSynchronizedWithCurrentItem="True"
-                                  ItemsSource="{Binding Path=SystemIncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  SelectedIndex="{Binding Path=SelectedSystemIncludeFoldersIndex,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                  HorizontalContentAlignment="Stretch"
-                                  SelectionMode="Extended"
-                                  Width="Auto"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                            <ListView.Resources>
-                                <Style TargetType="GridViewColumnHeader">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
-                                </Style>
-                            </ListView.Resources>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="{x:Type ListViewItem}">
-                                    <Setter Property="HorizontalContentAlignment"
-                                            Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Width="{Binding Width, ElementName=SystemIncludeFoldersListBox}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <local:EditableTextBlock
-                                                    Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                    HorizontalAlignment="Stretch"
-                                                    TextChanged="SystemIncludeFoldersTextBox_TextChanged"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </DockPanel>
+                    </ScrollViewer>
+
                 </Grid>
+
             </TabItem>
         </TabControl>
     </Grid>

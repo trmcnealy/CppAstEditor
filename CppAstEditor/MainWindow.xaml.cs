@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+#if DEBUG
 using System.Configuration;
 using System.Diagnostics;
+#endif
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Xml.Serialization;
@@ -83,12 +86,31 @@ namespace CppAstEditor
 
             ConverterOptions = new CSharpConverterOptions
             {
-                TypedefCodeGenKind = CppTypedefCodeGenKind.Wrap,
-                TargetCpu          = CppTargetCpu.X86_64,
-                TargetCpuSub       = string.Empty,
-                TargetVendor       = "w64",
-                TargetSystem       = "windows",
-                TargetAbi          = "gnu"
+                //C++
+                TargetCpu           = CppTargetCpu.X86_64,
+                TargetCpuSub        = string.Empty,
+                TargetVendor        = "w64",
+                TargetSystem        = "windows",
+                TargetAbi           = "gnu",
+                ParseAsCpp          = true,
+                ParseComments       = false,
+                ParseMacros         = true,
+                AutoSquashTypedef   = true,
+                ParseSystemIncludes = false,
+                ParseAttributes     = true,
+                //C#
+                TypedefCodeGenKind               = CppTypedefCodeGenKind.NoWrap,
+                DefaultOutputFilePath            = (UPath)"/LibNative.generated.cs", //AppDomain.CurrentDomain.BaseDirectory,
+                DefaultNamespace                 = "LibNative",
+                DefaultClassLib                  = "libnative",
+                DefaultDllImportNameAndArguments = "",
+                AllowFixedSizeBuffers            = true,
+                DefaultCharSet                   = CharSet.Ansi,
+                DispatchOutputPerInclude         = false,
+                DefaultMarshalForString          = new CSharpMarshalAttribute(CSharpUnmanagedKind.LPStr),
+                DefaultMarshalForBool            = new CSharpMarshalAttribute(CSharpUnmanagedKind.Bool),
+                GenerateAsInternal               = false,
+                GenerateEnumItemAsFields         = false
             };
 
             Initialize();
@@ -96,7 +118,7 @@ namespace CppAstEditor
 
         public void Dispose()
         {
-            UpdateAndSaveSettings();
+            //UpdateAndSaveSettings();
         }
 
         public void Initialize()
@@ -167,21 +189,21 @@ namespace CppAstEditor
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
         }
 
+#if DEBUG
         private void Default_SettingsLoaded(object                  sender,
                                             SettingsLoadedEventArgs e)
         {
-#if DEBUG
+
             Debug.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
-#endif
+
         }
 
         private void Default_SettingsSaving(object          sender,
                                             CancelEventArgs e)
         {
-#if DEBUG
             Debug.WriteLine("Saving app settings.");
-#endif
         }
+#endif
 
         public void UpdateAndSaveSettings()
         {
@@ -237,6 +259,30 @@ namespace CppAstEditor
             Settings.Default.SystemIncludeFolders = dto.SystemIncludeFolders;
 
             Settings.Default.Save();
+
+            ParseAsCpp                       = dto.Options.ParseAsCpp;
+            ParseComments                    = dto.Options.ParseComments;
+            ParseMacros                      = dto.Options.ParseMacros;
+            AutoSquashTypedef                = dto.Options.AutoSquashTypedef;
+            ParseSystemIncludes              = dto.Options.ParseSystemIncludes;
+            ParseAttributes                  = dto.Options.ParseAttributes;
+            TargetCpu                        = dto.Options.TargetCpu;
+            TargetCpuSub                     = dto.Options.TargetCpuSub;
+            TargetVendor                     = dto.Options.TargetVendor;
+            TargetSystem                     = dto.Options.TargetSystem;
+            TargetAbi                        = dto.Options.TargetAbi;
+            DefaultNamespace                 = dto.Options.DefaultNamespace;
+            DefaultOutputFilePath            = dto.Options.DefaultOutputFilePath;
+            DefaultClassLib                  = dto.Options.DefaultClassLib;
+            GenerateAsInternal               = dto.Options.GenerateAsInternal;
+            DefaultDllImportNameAndArguments = dto.Options.DefaultDllImportNameAndArguments;
+            AllowFixedSizeBuffers            = dto.Options.AllowFixedSizeBuffers;
+            DefaultCharSet                   = dto.Options.DefaultCharSet;
+            DispatchOutputPerInclude         = dto.Options.DispatchOutputPerInclude;
+            DefaultMarshalForString          = dto.Options.DefaultMarshalForString;
+            DefaultMarshalForBool            = dto.Options.DefaultMarshalForBool;
+            GenerateEnumItemAsFields         = dto.Options.GenerateEnumItemAsFields;
+            TypedefCodeGenKind               = dto.Options.TypedefCodeGenKind;
         }
 
         private void ExportSettingsCommand_Executed(object          sender,
@@ -268,7 +314,8 @@ namespace CppAstEditor
             using StreamWriter sw = new StreamWriter(filename);
 
             xmlSerializer.Serialize(sw,
-                                    new DtoSettings(Settings.Default));
+                                    new DtoSettings(Settings.Default,
+                                                    _converterOptions));
 
             sw.Flush();
         }
@@ -285,8 +332,12 @@ namespace CppAstEditor
 
                 if(!csCompilation.HasErrors)
                 {
-                    MemoryFileSystem fs         = new MemoryFileSystem();
-                    CodeWriter       codeWriter = new CodeWriter(new CodeWriterOptions(fs));
+                    MemoryFileSystem fs = new MemoryFileSystem();
+
+                    CodeWriterOptions cwo = new CodeWriterOptions(fs);
+
+                    CodeWriter codeWriter = new CodeWriter(cwo);
+
                     csCompilation.DumpTo(codeWriter);
 
                     result = fs.ReadAllText(options.DefaultOutputFilePath);
@@ -448,6 +499,355 @@ namespace CppAstEditor
 
             e.Handled = true;
         }
+
+        #region ConverterOptions
+
+        public bool ParseAsCpp
+        {
+            get { return ConverterOptions.ParseAsCpp; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAsCpp,
+                                                          value))
+                {
+                    ConverterOptions.ParseAsCpp = value;
+
+                    RaisePropertyChanged(nameof(ParseAsCpp));
+                }
+            }
+        }
+
+        public bool ParseComments
+        {
+            get { return ConverterOptions.ParseComments; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseComments,
+                                                          value))
+                {
+                    ConverterOptions.ParseComments = value;
+
+                    RaisePropertyChanged(nameof(ParseComments));
+                }
+            }
+        }
+
+        public bool ParseMacros
+        {
+            get { return ConverterOptions.ParseMacros; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseMacros,
+                                                          value))
+                {
+                    ConverterOptions.ParseMacros = value;
+
+                    RaisePropertyChanged(nameof(ParseMacros));
+                }
+            }
+        }
+
+        public bool AutoSquashTypedef
+        {
+            get { return ConverterOptions.AutoSquashTypedef; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AutoSquashTypedef,
+                                                          value))
+                {
+                    ConverterOptions.AutoSquashTypedef = value;
+
+                    RaisePropertyChanged(nameof(AutoSquashTypedef));
+                }
+            }
+        }
+
+        public bool ParseSystemIncludes
+        {
+            get { return ConverterOptions.ParseSystemIncludes; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseSystemIncludes,
+                                                          value))
+                {
+                    ConverterOptions.ParseSystemIncludes = value;
+
+                    RaisePropertyChanged(nameof(ParseSystemIncludes));
+                }
+            }
+        }
+
+        public bool ParseAttributes
+        {
+            get { return ConverterOptions.ParseAttributes; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAttributes,
+                                                          value))
+                {
+                    ConverterOptions.ParseAttributes = value;
+
+                    RaisePropertyChanged(nameof(ParseAttributes));
+                }
+            }
+        }
+
+        public CppTargetCpu TargetCpu
+        {
+            get { return ConverterOptions.TargetCpu; }
+            set
+            {
+                if(!EqualityComparer<CppTargetCpu>.Default.Equals(ConverterOptions.TargetCpu,
+                                                                  value))
+                {
+                    ConverterOptions.TargetCpu = value;
+
+                    RaisePropertyChanged(nameof(TargetCpu));
+                }
+            }
+        }
+
+        public string TargetCpuSub
+        {
+            get { return ConverterOptions.TargetCpuSub; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetCpuSub,
+                                                            value))
+                {
+                    ConverterOptions.TargetCpuSub = value;
+
+                    RaisePropertyChanged(nameof(TargetCpuSub));
+                }
+            }
+        }
+
+        public string TargetVendor
+        {
+            get { return ConverterOptions.TargetVendor; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetVendor,
+                                                            value))
+                {
+                    ConverterOptions.TargetVendor = value;
+
+                    RaisePropertyChanged(nameof(TargetVendor));
+                }
+            }
+        }
+
+        public string TargetSystem
+        {
+            get { return ConverterOptions.TargetSystem; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetSystem,
+                                                            value))
+                {
+                    ConverterOptions.TargetSystem = value;
+
+                    RaisePropertyChanged(nameof(TargetSystem));
+                }
+            }
+        }
+
+        public string TargetAbi
+        {
+            get { return ConverterOptions.TargetAbi; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetAbi,
+                                                            value))
+                {
+                    ConverterOptions.TargetAbi = value;
+
+                    RaisePropertyChanged(nameof(TargetAbi));
+                }
+            }
+        }
+
+        public string DefaultNamespace
+        {
+            get { return ConverterOptions.DefaultNamespace; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultNamespace,
+                                                            value))
+                {
+                    ConverterOptions.DefaultNamespace = value;
+
+                    RaisePropertyChanged(nameof(DefaultNamespace));
+                }
+            }
+        }
+
+        public string DefaultOutputFilePath
+        {
+            get { return ConverterOptions.DefaultOutputFilePath.ToString(); }
+            set
+            {
+                if(!EqualityComparer<UPath>.Default.Equals(ConverterOptions.DefaultOutputFilePath.ToString(),
+                                                           value))
+                {
+                    ConverterOptions.DefaultOutputFilePath = (UPath)value;
+
+                    RaisePropertyChanged(nameof(DefaultOutputFilePath));
+                }
+            }
+        }
+
+        public string DefaultClassLib
+        {
+            get { return ConverterOptions.DefaultClassLib; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultClassLib,
+                                                            value))
+                {
+                    ConverterOptions.DefaultClassLib = value;
+
+                    RaisePropertyChanged(nameof(DefaultClassLib));
+                }
+            }
+        }
+
+        public bool GenerateAsInternal
+        {
+            get { return ConverterOptions.GenerateAsInternal; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateAsInternal,
+                                                          value))
+                {
+                    ConverterOptions.GenerateAsInternal = value;
+
+                    RaisePropertyChanged(nameof(GenerateAsInternal));
+                }
+            }
+        }
+
+        public string DefaultDllImportNameAndArguments
+        {
+            get { return ConverterOptions.DefaultDllImportNameAndArguments; }
+            set
+            {
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultDllImportNameAndArguments,
+                                                            value))
+                {
+                    ConverterOptions.DefaultDllImportNameAndArguments = value;
+
+                    RaisePropertyChanged(nameof(DefaultDllImportNameAndArguments));
+                }
+            }
+        }
+
+        public bool AllowFixedSizeBuffers
+        {
+            get { return ConverterOptions.AllowFixedSizeBuffers; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AllowFixedSizeBuffers,
+                                                          value))
+                {
+                    ConverterOptions.AllowFixedSizeBuffers = value;
+
+                    RaisePropertyChanged(nameof(AllowFixedSizeBuffers));
+                }
+            }
+        }
+
+        public CharSet DefaultCharSet
+        {
+            get { return ConverterOptions.DefaultCharSet; }
+            set
+            {
+                if(!EqualityComparer<CharSet>.Default.Equals(ConverterOptions.DefaultCharSet,
+                                                             value))
+                {
+                    ConverterOptions.DefaultCharSet = value;
+
+                    RaisePropertyChanged(nameof(DefaultCharSet));
+                }
+            }
+        }
+
+        public bool DispatchOutputPerInclude
+        {
+            get { return ConverterOptions.DispatchOutputPerInclude; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.DispatchOutputPerInclude,
+                                                          value))
+                {
+                    ConverterOptions.DispatchOutputPerInclude = value;
+
+                    RaisePropertyChanged(nameof(DispatchOutputPerInclude));
+                }
+            }
+        }
+
+        public CSharpUnmanagedKind DefaultMarshalForString
+        {
+            get { return ConverterOptions.DefaultMarshalForString.UnmanagedType; }
+            set
+            {
+                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForString.UnmanagedType,
+                                                                         value))
+                {
+                    ConverterOptions.DefaultMarshalForString = new CSharpMarshalAttribute(value);
+
+                    RaisePropertyChanged(nameof(DefaultMarshalForString));
+                }
+            }
+        }
+
+        public CSharpUnmanagedKind DefaultMarshalForBool
+        {
+            get { return ConverterOptions.DefaultMarshalForBool.UnmanagedType; }
+            set
+            {
+                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForBool.UnmanagedType,
+                                                                         value))
+                {
+                    ConverterOptions.DefaultMarshalForBool = new CSharpMarshalAttribute(value);
+
+                    RaisePropertyChanged(nameof(DefaultMarshalForBool));
+                }
+            }
+        }
+
+        public bool GenerateEnumItemAsFields
+        {
+            get { return ConverterOptions.GenerateEnumItemAsFields; }
+            set
+            {
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateEnumItemAsFields,
+                                                          value))
+                {
+                    ConverterOptions.GenerateEnumItemAsFields = value;
+
+                    RaisePropertyChanged(nameof(GenerateEnumItemAsFields));
+                }
+            }
+        }
+
+        public CppTypedefCodeGenKind TypedefCodeGenKind
+        {
+            get { return ConverterOptions.TypedefCodeGenKind; }
+            set
+            {
+                if(!EqualityComparer<CppTypedefCodeGenKind>.Default.Equals(ConverterOptions.TypedefCodeGenKind,
+                                                                           value))
+                {
+                    ConverterOptions.TypedefCodeGenKind = value;
+
+                    RaisePropertyChanged(nameof(TypedefCodeGenKind));
+                }
+            }
+        }
+
+        #endregion
 
         #region Defines
 
