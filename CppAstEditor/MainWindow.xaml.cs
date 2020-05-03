@@ -42,11 +42,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get { return _converterOptions; }
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            set
-            {
-                SetProperty(ref _converterOptions,
-                            value);
-            }
+            set { SetProperty(ref _converterOptions, value); }
         }
 
         public TextDocument CppText
@@ -54,11 +50,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get { return _cppText; }
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            set
-            {
-                SetProperty(ref _cppText,
-                            value);
-            }
+            set { SetProperty(ref _cppText, value); }
         }
 
         public TextDocument CSharpText
@@ -66,11 +58,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get { return _cSharpText; }
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            set
-            {
-                SetProperty(ref _cSharpText,
-                            value);
-            }
+            set { SetProperty(ref _cSharpText, value); }
         }
 
         public MainWindow()
@@ -83,6 +71,8 @@ namespace CppAstEditor
             Settings.Default.SettingsLoaded += Default_SettingsLoaded;
             Settings.Default.SettingsSaving += Default_SettingsSaving;
 #endif
+
+            string defaultFolder = System.Environment.GetEnvironmentVariable("USERPROFILE") ?? System.Environment.GetEnvironmentVariable("HOME");
 
             ConverterOptions = new CSharpConverterOptions
             {
@@ -100,7 +90,7 @@ namespace CppAstEditor
                 ParseAttributes     = true,
                 //C#
                 TypedefCodeGenKind               = CppTypedefCodeGenKind.NoWrap,
-                DefaultOutputFilePath            = (UPath)"/LibNative.generated.cs", //AppDomain.CurrentDomain.BaseDirectory,
+                DefaultOutputFilePath            = (UPath)Path.Combine(defaultFolder, "LibNative.generated.cs"),
                 DefaultNamespace                 = "LibNative",
                 DefaultClassLib                  = "libnative",
                 DefaultDllImportNameAndArguments = "",
@@ -193,9 +183,7 @@ namespace CppAstEditor
         private void Default_SettingsLoaded(object                  sender,
                                             SettingsLoadedEventArgs e)
         {
-
             Debug.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
-
         }
 
         private void Default_SettingsSaving(object          sender,
@@ -207,19 +195,26 @@ namespace CppAstEditor
 
         public void UpdateAndSaveSettings()
         {
-            Settings.Default.Defines.Clear();
-            Settings.Default.Defines.AddRange(ConverterOptions.Defines.Distinct().ToArray());
+            try
+            {
+                Settings.Default.Defines.Clear();
+                Settings.Default.Defines.AddRange(ConverterOptions.Defines.Distinct().ToArray());
 
-            Settings.Default.AdditionalArguments.Clear();
-            Settings.Default.AdditionalArguments.AddRange(ConverterOptions.AdditionalArguments.Distinct().ToArray());
+                Settings.Default.AdditionalArguments.Clear();
+                Settings.Default.AdditionalArguments.AddRange(ConverterOptions.AdditionalArguments.Distinct().ToArray());
 
-            Settings.Default.IncludeFolders.Clear();
-            Settings.Default.IncludeFolders.AddRange(ConverterOptions.IncludeFolders.Distinct().ToArray());
+                Settings.Default.IncludeFolders.Clear();
+                Settings.Default.IncludeFolders.AddRange(ConverterOptions.IncludeFolders.Distinct().ToArray());
 
-            Settings.Default.SystemIncludeFolders.Clear();
-            Settings.Default.SystemIncludeFolders.AddRange(ConverterOptions.SystemIncludeFolders.Distinct().ToArray());
+                Settings.Default.SystemIncludeFolders.Clear();
+                Settings.Default.SystemIncludeFolders.AddRange(ConverterOptions.SystemIncludeFolders.Distinct().ToArray());
 
-            Settings.Default.Save();
+                Settings.Default.Save();
+            }
+            catch
+            {
+                Console.Error.WriteLine("Saving app settings failed.");
+            }
         }
 
         private void ImportSettingsCommand_Executed(object          sender,
@@ -313,9 +308,7 @@ namespace CppAstEditor
 
             using StreamWriter sw = new StreamWriter(filename);
 
-            xmlSerializer.Serialize(sw,
-                                    new DtoSettings(Settings.Default,
-                                                    _converterOptions));
+            xmlSerializer.Serialize(sw, new DtoSettings(Settings.Default, _converterOptions));
 
             sw.Flush();
         }
@@ -327,8 +320,7 @@ namespace CppAstEditor
 
             try
             {
-                CSharpCompilation csCompilation = CSharpConverter.Convert(text,
-                                                                          options);
+                CSharpCompilation csCompilation = CSharpConverter.Convert(text, options);
 
                 if(!csCompilation.HasErrors)
                 {
@@ -340,7 +332,14 @@ namespace CppAstEditor
 
                     csCompilation.DumpTo(codeWriter);
 
-                    result = fs.ReadAllText(options.DefaultOutputFilePath);
+                    if(File.Exists(options.DefaultOutputFilePath.ToString()))
+                    {
+                        result = fs.ReadAllText(options.DefaultOutputFilePath.ToString());
+                    }
+                    else
+                    {
+                        result = Path.GetTempFileName();
+                    }
                 }
                 else
                 {
@@ -360,8 +359,7 @@ namespace CppAstEditor
         {
             if(_cppText.TextLength > 0)
             {
-                CSharpText.Text = ComplieCode(_cppText.Text,
-                                              ConverterOptions);
+                CSharpText.Text = ComplieCode(_cppText.Text, ConverterOptions);
             }
         }
 
@@ -370,8 +368,7 @@ namespace CppAstEditor
         {
             if(_cppText.TextLength > 0)
             {
-                CSharpText.Text = ComplieCode(_cppText.Text,
-                                              ConverterOptions);
+                CSharpText.Text = ComplieCode(_cppText.Text, ConverterOptions);
             }
         }
 
@@ -507,8 +504,7 @@ namespace CppAstEditor
             get { return ConverterOptions.ParseAsCpp; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAsCpp,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAsCpp, value))
                 {
                     ConverterOptions.ParseAsCpp = value;
 
@@ -522,8 +518,7 @@ namespace CppAstEditor
             get { return ConverterOptions.ParseComments; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseComments,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseComments, value))
                 {
                     ConverterOptions.ParseComments = value;
 
@@ -537,8 +532,7 @@ namespace CppAstEditor
             get { return ConverterOptions.ParseMacros; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseMacros,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseMacros, value))
                 {
                     ConverterOptions.ParseMacros = value;
 
@@ -552,8 +546,7 @@ namespace CppAstEditor
             get { return ConverterOptions.AutoSquashTypedef; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AutoSquashTypedef,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AutoSquashTypedef, value))
                 {
                     ConverterOptions.AutoSquashTypedef = value;
 
@@ -567,8 +560,7 @@ namespace CppAstEditor
             get { return ConverterOptions.ParseSystemIncludes; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseSystemIncludes,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseSystemIncludes, value))
                 {
                     ConverterOptions.ParseSystemIncludes = value;
 
@@ -582,8 +574,7 @@ namespace CppAstEditor
             get { return ConverterOptions.ParseAttributes; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAttributes,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.ParseAttributes, value))
                 {
                     ConverterOptions.ParseAttributes = value;
 
@@ -597,8 +588,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TargetCpu; }
             set
             {
-                if(!EqualityComparer<CppTargetCpu>.Default.Equals(ConverterOptions.TargetCpu,
-                                                                  value))
+                if(!EqualityComparer<CppTargetCpu>.Default.Equals(ConverterOptions.TargetCpu, value))
                 {
                     ConverterOptions.TargetCpu = value;
 
@@ -612,8 +602,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TargetCpuSub; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetCpuSub,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetCpuSub, value))
                 {
                     ConverterOptions.TargetCpuSub = value;
 
@@ -627,8 +616,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TargetVendor; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetVendor,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetVendor, value))
                 {
                     ConverterOptions.TargetVendor = value;
 
@@ -642,8 +630,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TargetSystem; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetSystem,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetSystem, value))
                 {
                     ConverterOptions.TargetSystem = value;
 
@@ -657,8 +644,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TargetAbi; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetAbi,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.TargetAbi, value))
                 {
                     ConverterOptions.TargetAbi = value;
 
@@ -672,8 +658,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultNamespace; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultNamespace,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultNamespace, value))
                 {
                     ConverterOptions.DefaultNamespace = value;
 
@@ -687,8 +672,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultOutputFilePath.ToString(); }
             set
             {
-                if(!EqualityComparer<UPath>.Default.Equals(ConverterOptions.DefaultOutputFilePath.ToString(),
-                                                           value))
+                if(!EqualityComparer<UPath>.Default.Equals(ConverterOptions.DefaultOutputFilePath.ToString(), value))
                 {
                     ConverterOptions.DefaultOutputFilePath = (UPath)value;
 
@@ -702,8 +686,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultClassLib; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultClassLib,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultClassLib, value))
                 {
                     ConverterOptions.DefaultClassLib = value;
 
@@ -717,8 +700,7 @@ namespace CppAstEditor
             get { return ConverterOptions.GenerateAsInternal; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateAsInternal,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateAsInternal, value))
                 {
                     ConverterOptions.GenerateAsInternal = value;
 
@@ -732,8 +714,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultDllImportNameAndArguments; }
             set
             {
-                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultDllImportNameAndArguments,
-                                                            value))
+                if(!EqualityComparer<string>.Default.Equals(ConverterOptions.DefaultDllImportNameAndArguments, value))
                 {
                     ConverterOptions.DefaultDllImportNameAndArguments = value;
 
@@ -747,8 +728,7 @@ namespace CppAstEditor
             get { return ConverterOptions.AllowFixedSizeBuffers; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AllowFixedSizeBuffers,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.AllowFixedSizeBuffers, value))
                 {
                     ConverterOptions.AllowFixedSizeBuffers = value;
 
@@ -762,8 +742,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultCharSet; }
             set
             {
-                if(!EqualityComparer<CharSet>.Default.Equals(ConverterOptions.DefaultCharSet,
-                                                             value))
+                if(!EqualityComparer<CharSet>.Default.Equals(ConverterOptions.DefaultCharSet, value))
                 {
                     ConverterOptions.DefaultCharSet = value;
 
@@ -777,8 +756,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DispatchOutputPerInclude; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.DispatchOutputPerInclude,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.DispatchOutputPerInclude, value))
                 {
                     ConverterOptions.DispatchOutputPerInclude = value;
 
@@ -792,8 +770,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultMarshalForString.UnmanagedType; }
             set
             {
-                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForString.UnmanagedType,
-                                                                         value))
+                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForString.UnmanagedType, value))
                 {
                     ConverterOptions.DefaultMarshalForString = new CSharpMarshalAttribute(value);
 
@@ -807,8 +784,7 @@ namespace CppAstEditor
             get { return ConverterOptions.DefaultMarshalForBool.UnmanagedType; }
             set
             {
-                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForBool.UnmanagedType,
-                                                                         value))
+                if(!EqualityComparer<CSharpUnmanagedKind>.Default.Equals(ConverterOptions.DefaultMarshalForBool.UnmanagedType, value))
                 {
                     ConverterOptions.DefaultMarshalForBool = new CSharpMarshalAttribute(value);
 
@@ -822,8 +798,7 @@ namespace CppAstEditor
             get { return ConverterOptions.GenerateEnumItemAsFields; }
             set
             {
-                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateEnumItemAsFields,
-                                                          value))
+                if(!EqualityComparer<bool>.Default.Equals(ConverterOptions.GenerateEnumItemAsFields, value))
                 {
                     ConverterOptions.GenerateEnumItemAsFields = value;
 
@@ -837,8 +812,7 @@ namespace CppAstEditor
             get { return ConverterOptions.TypedefCodeGenKind; }
             set
             {
-                if(!EqualityComparer<CppTypedefCodeGenKind>.Default.Equals(ConverterOptions.TypedefCodeGenKind,
-                                                                           value))
+                if(!EqualityComparer<CppTypedefCodeGenKind>.Default.Equals(ConverterOptions.TypedefCodeGenKind, value))
                 {
                     ConverterOptions.TypedefCodeGenKind = value;
 
@@ -860,9 +834,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _defines,
-                               value,
-                               nameof(Defines)))
+                if(SetProperty(ref _defines, value, nameof(Defines)))
                 {
                     void CollectionChangedEventHandler(object                           sender,
                                                        NotifyCollectionChangedEventArgs e)
@@ -886,9 +858,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _selectedDefinesIndex,
-                               value,
-                               nameof(SelectedDefinesIndex)))
+                if(SetProperty(ref _selectedDefinesIndex, value, nameof(SelectedDefinesIndex)))
                 {
                 }
             }
@@ -907,9 +877,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _additionalArguments,
-                               value,
-                               nameof(AdditionalArguments)))
+                if(SetProperty(ref _additionalArguments, value, nameof(AdditionalArguments)))
                 {
                     void CollectionChangedEventHandler(object                           sender,
                                                        NotifyCollectionChangedEventArgs e)
@@ -933,9 +901,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _selectedAdditionalArgumentsIndex,
-                               value,
-                               nameof(SelectedAdditionalArgumentsIndex)))
+                if(SetProperty(ref _selectedAdditionalArgumentsIndex, value, nameof(SelectedAdditionalArgumentsIndex)))
                 {
                 }
             }
@@ -954,9 +920,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _includeFolders,
-                               value,
-                               nameof(IncludeFolders)))
+                if(SetProperty(ref _includeFolders, value, nameof(IncludeFolders)))
                 {
                     void CollectionChangedEventHandler(object                           sender,
                                                        NotifyCollectionChangedEventArgs e)
@@ -980,9 +944,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _selectedIncludeFoldersIndex,
-                               value,
-                               nameof(SelectedIncludeFoldersIndex)))
+                if(SetProperty(ref _selectedIncludeFoldersIndex, value, nameof(SelectedIncludeFoldersIndex)))
                 {
                 }
             }
@@ -1001,9 +963,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _systemIncludeFolders,
-                               value,
-                               nameof(SystemIncludeFolders)))
+                if(SetProperty(ref _systemIncludeFolders, value, nameof(SystemIncludeFolders)))
                 {
                     void CollectionChangedEventHandler(object                           sender,
                                                        NotifyCollectionChangedEventArgs e)
@@ -1027,9 +987,7 @@ namespace CppAstEditor
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
-                if(SetProperty(ref _selectedSystemIncludeFoldersIndex,
-                               value,
-                               nameof(SelectedSystemIncludeFoldersIndex)))
+                if(SetProperty(ref _selectedSystemIncludeFoldersIndex, value, nameof(SelectedSystemIncludeFoldersIndex)))
                 {
                 }
             }
@@ -1045,8 +1003,7 @@ namespace CppAstEditor
                                               T                         value,
                                               [CallerMemberName] string propertyName = null)
         {
-            if(EqualityComparer<T>.Default.Equals(storage,
-                                                  value))
+            if(EqualityComparer<T>.Default.Equals(storage, value))
             {
                 return false;
             }
@@ -1062,18 +1019,14 @@ namespace CppAstEditor
                                               Action                    onChanged,
                                               [CallerMemberName] string propertyName = null)
         {
-            if(EqualityComparer<T>.Default.Equals(storage,
-                                                  value))
+            if(EqualityComparer<T>.Default.Equals(storage, value))
             {
                 return false;
             }
 
             storage = value;
 
-            if(onChanged != null)
-            {
-                onChanged();
-            }
+            onChanged?.Invoke();
 
             RaisePropertyChanged(propertyName);
 
@@ -1095,13 +1048,7 @@ namespace CppAstEditor
         {
             PropertyChangedEventHandler propertyChanged = PropertyChanged;
 
-            if(propertyChanged == null)
-            {
-                return;
-            }
-
-            propertyChanged(this,
-                            args);
+            propertyChanged?.Invoke(this, args);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -1132,22 +1079,19 @@ namespace CppAstEditor
 
             if(memberExpression == null)
             {
-                throw new ArgumentException("PropertySupport_NotMemberAccessExpression_Exception",
-                                            nameof(expression));
+                throw new ArgumentException("PropertySupport_NotMemberAccessExpression_Exception", nameof(expression));
             }
 
             PropertyInfo propertyInfo = memberExpression.Member as PropertyInfo;
 
             if(propertyInfo == null)
             {
-                throw new ArgumentException("PropertySupport_ExpressionNotProperty_Exception",
-                                            nameof(expression));
+                throw new ArgumentException("PropertySupport_ExpressionNotProperty_Exception", nameof(expression));
             }
 
-            if(propertyInfo.GetMethod.IsStatic)
+            if(propertyInfo.GetMethod != null && propertyInfo.GetMethod.IsStatic)
             {
-                throw new ArgumentException("PropertySupport_StaticExpression_Exception",
-                                            nameof(expression));
+                throw new ArgumentException("PropertySupport_StaticExpression_Exception", nameof(expression));
             }
 
             return memberExpression.Member.Name;

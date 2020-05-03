@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace CppAstEditor
 {
@@ -9,8 +12,17 @@ namespace CppAstEditor
     {
         private MainWindow _mainWindow;
 
+        public const string LibraryName = "libclang";
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            string operatingSystem      = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "linux";
+            string platformArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x64" : "x86";
+
+            string nativeLibraryPath = $"runtimes\\{operatingSystem}-{platformArchitecture}\\native";
+
+            IntPtr Handle = NativeLibrary.Load(Path.Combine(nativeLibraryPath, LibraryName + ".dll"));
+
             _mainWindow = new MainWindow();
             _mainWindow.Show();
 
