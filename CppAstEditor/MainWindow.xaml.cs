@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-#if DEBUG
 using System.Configuration;
 using System.Diagnostics;
-#endif
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -14,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using System.Xml.Serialization;
 
 using CppAst;
@@ -61,18 +60,23 @@ namespace CppAstEditor
             set { SetProperty(ref _cSharpText, value); }
         }
 
+        private readonly DispatcherTimer _timer = new DispatcherTimer
+        {
+            Interval = new TimeSpan(0, 0, 0, 0, 350)
+        };
+
         public MainWindow()
         {
             InitializeComponent();
 
+            _timer.Tick += Timer_Tick;
+
             DataContext = this;
 
-#if DEBUG
             Settings.Default.SettingsLoaded += Default_SettingsLoaded;
             Settings.Default.SettingsSaving += Default_SettingsSaving;
-#endif
 
-            string defaultFolder = System.Environment.GetEnvironmentVariable("USERPROFILE") ?? System.Environment.GetEnvironmentVariable("HOME");
+            //string defaultFolder = System.Environment.GetEnvironmentVariable("TEMP") ?? System.Environment.GetEnvironmentVariable("TMP");
 
             ConverterOptions = new CSharpConverterOptions
             {
@@ -90,7 +94,7 @@ namespace CppAstEditor
                 ParseAttributes     = true,
                 //C#
                 TypedefCodeGenKind               = CppTypedefCodeGenKind.NoWrap,
-                DefaultOutputFilePath            = (UPath)Path.Combine(defaultFolder, "LibNative.generated.cs"),
+                DefaultOutputFilePath            = (UPath)"/LibNative.generated.cs", //(UPath)Path.Combine(defaultFolder, "CppAstEditor.generated.cs"),
                 DefaultNamespace                 = "LibNative",
                 DefaultClassLib                  = "libnative",
                 DefaultDllImportNameAndArguments = "",
@@ -105,10 +109,16 @@ namespace CppAstEditor
 
             Initialize();
         }
+        
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            Console.WriteLine("Window_Closing.");
+            Dispose();
+        }
 
         public void Dispose()
         {
-            //UpdateAndSaveSettings();
+            CppText.Text = "";
         }
 
         public void Initialize()
@@ -178,20 +188,18 @@ namespace CppAstEditor
             AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
         }
-
-#if DEBUG
+        
         private void Default_SettingsLoaded(object                  sender,
                                             SettingsLoadedEventArgs e)
         {
-            Debug.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
+            Console.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
         }
 
         private void Default_SettingsSaving(object          sender,
                                             CancelEventArgs e)
         {
-            Debug.WriteLine("Saving app settings.");
+            Console.WriteLine("Saving app settings.");
         }
-#endif
 
         public void UpdateAndSaveSettings()
         {
@@ -267,7 +275,6 @@ namespace CppAstEditor
             TargetSystem                     = dto.Options.TargetSystem;
             TargetAbi                        = dto.Options.TargetAbi;
             DefaultNamespace                 = dto.Options.DefaultNamespace;
-            DefaultOutputFilePath            = dto.Options.DefaultOutputFilePath;
             DefaultClassLib                  = dto.Options.DefaultClassLib;
             GenerateAsInternal               = dto.Options.GenerateAsInternal;
             DefaultDllImportNameAndArguments = dto.Options.DefaultDllImportNameAndArguments;
@@ -332,14 +339,7 @@ namespace CppAstEditor
 
                     csCompilation.DumpTo(codeWriter);
 
-                    if(File.Exists(options.DefaultOutputFilePath.ToString()))
-                    {
-                        result = fs.ReadAllText(options.DefaultOutputFilePath.ToString());
-                    }
-                    else
-                    {
-                        result = Path.GetTempFileName();
-                    }
+                    result = fs.ReadAllText(options.DefaultOutputFilePath.ToString());
                 }
                 else
                 {
@@ -354,22 +354,29 @@ namespace CppAstEditor
             return result;
         }
 
-        private void CppTextBox_DocumentChanged(object    sender,
-                                                EventArgs e)
+        private void Timer_Tick(object    sender,
+                                EventArgs e)
         {
+            _timer.Stop();
+
             if(_cppText.TextLength > 0)
             {
                 CSharpText.Text = ComplieCode(_cppText.Text, ConverterOptions);
             }
         }
 
-        private void CppTextBox_TextChanged(object    sender,
+        private void CppTextBox_DocumentChanged(object    sender,
+                                                EventArgs e)
+        {
+            _timer.Stop();
+            _timer.Start();
+        }
+
+        private void CppTextBox_TextChanged(object sender,
                                             EventArgs e)
         {
-            if(_cppText.TextLength > 0)
-            {
-                CSharpText.Text = ComplieCode(_cppText.Text, ConverterOptions);
-            }
+            _timer.Stop();
+            _timer.Start();
         }
 
         private void CSharpText_DocumentChanged(object    sender,
@@ -1098,5 +1105,6 @@ namespace CppAstEditor
         }
 
         #endregion
+
     }
 }

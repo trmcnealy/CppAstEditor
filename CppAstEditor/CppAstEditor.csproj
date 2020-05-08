@@ -11,6 +11,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunEmitSymbols>true</PublishReadyToRunEmitSymbols>
     <Platforms>AnyCPU;x64</Platforms>
+    <RuntimeIdentifier Condition="'$(Platform)'=='x64'">win10-x64</RuntimeIdentifier>
     <PackageOutputPath Condition="'$(PACKAGE_CACHE)'!=''">$(PACKAGE_CACHE)</PackageOutputPath>
     <PackageOutputPath Condition="'$(PACKAGE_CACHE)'==''">$(OutputPath)</PackageOutputPath>
   </PropertyGroup>

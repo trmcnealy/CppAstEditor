@@ -34,8 +34,6 @@ namespace CppAstEditor
 
         public string DefaultNamespace { get; set; }
 
-        public string DefaultOutputFilePath { get; set; }
-
         public string DefaultClassLib { get; set; }
 
         public bool GenerateAsInternal { get; set; }
@@ -72,7 +70,6 @@ namespace CppAstEditor
                           string                targetSystem,
                           string                targetAbi,
                           string                defaultNamespace,
-                          string                defaultOutputFilePath,
                           string                defaultClassLib,
                           bool                  generateAsInternal,
                           string                defaultDllImportNameAndArguments,
@@ -96,7 +93,6 @@ namespace CppAstEditor
             TargetSystem                     = targetSystem;
             TargetAbi                        = targetAbi;
             DefaultNamespace                 = defaultNamespace;
-            DefaultOutputFilePath            = defaultOutputFilePath;
             DefaultClassLib                  = defaultClassLib;
             GenerateAsInternal               = generateAsInternal;
             DefaultDllImportNameAndArguments = defaultDllImportNameAndArguments;
@@ -123,7 +119,6 @@ namespace CppAstEditor
             TargetSystem                     = options.TargetSystem;
             TargetAbi                        = options.TargetAbi;
             DefaultNamespace                 = options.DefaultNamespace;
-            DefaultOutputFilePath            = options.DefaultOutputFilePath.ToString();
             DefaultClassLib                  = options.DefaultClassLib;
             GenerateAsInternal               = options.GenerateAsInternal;
             DefaultDllImportNameAndArguments = options.DefaultDllImportNameAndArguments;

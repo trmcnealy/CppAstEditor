@@ -14,7 +14,8 @@
         Height="900"
         Width="1500"
         d:DesignWidth="500"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
     <Window.Resources>
         <ObjectDataProvider MethodName="GetValues"
                             ObjectType="{x:Type system:Enum}"
@@ -57,14 +58,13 @@
 
                     <avalonEdit:TextEditor Grid.Column="0"
                                            x:Name="CppTextBox"
-                                           Document="{Binding CppText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay,Delay=500}"
+                                           Document="{Binding Path=CppText, UpdateSourceTrigger=PropertyChanged}"
                                            FontFamily="Consolas"
                                            FontSize="10pt"
                                            SyntaxHighlighting="C++"
                                            IsTabStop="False"
-                                           DocumentChanged="CppTextBox_DocumentChanged"
-                                           TextChanged="CppTextBox_TextChanged"
-                                           ShowLineNumbers="True"/>
+                                           ShowLineNumbers="True"
+                                           TextChanged="CppTextBox_TextChanged"/>
 
                     <GridSplitter Grid.Column="1"
                                   Width="5"
@@ -72,12 +72,11 @@
 
                     <avalonEdit:TextEditor Grid.Column="2"
                                            x:Name="CsTextBox"
-                                           Document="{Binding CSharpText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                           Document="{Binding Path=CSharpText, UpdateSourceTrigger=PropertyChanged}"
                                            FontFamily="Consolas"
                                            FontSize="10pt"
                                            SyntaxHighlighting="C#"
                                            IsTabStop="False"
-                                           DocumentChanged="CSharpText_DocumentChanged"
                                            IsReadOnly="True"
                                            ShowLineNumbers="True"/>
                 </Grid>
