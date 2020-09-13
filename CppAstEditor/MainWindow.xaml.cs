@@ -109,8 +109,9 @@ namespace CppAstEditor
 
             Initialize();
         }
-        
-        private void Window_Closing(object sender, CancelEventArgs e)
+
+        private void Window_Closing(object          sender,
+                                    CancelEventArgs e)
         {
             Console.WriteLine("Window_Closing.");
             Dispose();
@@ -188,7 +189,7 @@ namespace CppAstEditor
             AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
         }
-        
+
         private void Default_SettingsLoaded(object                  sender,
                                             SettingsLoadedEventArgs e)
         {
@@ -248,19 +249,31 @@ namespace CppAstEditor
                 return;
             }
 
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
-
             string filename = dlg.FileName;
 
             using StreamReader sr = new StreamReader(filename);
 
-            DtoSettings dto = (DtoSettings)xmlSerializer.Deserialize(sr);
+            DtoSettings dto =null;
+
+            try
+            {
+                XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
+
+                dto = (DtoSettings)xmlSerializer.Deserialize(sr);
+            }
+            catch(FileNotFoundException)
+            {
+            }
+
+            if(dto is null)
+            {
+                return;
+            }
 
             Settings.Default.Defines              = dto.Defines;
             Settings.Default.AdditionalArguments  = dto.AdditionalArguments;
             Settings.Default.IncludeFolders       = dto.IncludeFolders;
             Settings.Default.SystemIncludeFolders = dto.SystemIncludeFolders;
-
             Settings.Default.Save();
 
             ParseAsCpp                       = dto.Options.ParseAsCpp;
@@ -309,15 +322,21 @@ namespace CppAstEditor
                 return;
             }
 
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
-
             string filename = dlg.FileName;
 
             using StreamWriter sw = new StreamWriter(filename);
 
-            xmlSerializer.Serialize(sw, new DtoSettings(Settings.Default, _converterOptions));
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DtoSettings));
 
-            sw.Flush();
+            try
+            {
+                xmlSerializer.Serialize(sw, new DtoSettings(Settings.Default, _converterOptions));
+
+                sw.Flush();
+            }
+            catch(FileNotFoundException)
+            {
+            }
         }
 
         private static string ComplieCode(string                 text,
@@ -372,7 +391,7 @@ namespace CppAstEditor
             _timer.Start();
         }
 
-        private void CppTextBox_TextChanged(object sender,
+        private void CppTextBox_TextChanged(object    sender,
                                             EventArgs e)
         {
             _timer.Stop();
@@ -1105,6 +1124,5 @@ namespace CppAstEditor
         }
 
         #endregion
-
     }
 }

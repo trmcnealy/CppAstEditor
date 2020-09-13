@@ -1,4 +1,4 @@
-﻿<Window x:Class="CppAstEditor.MainWindow"
+<Window x:Class="CppAstEditor.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -14,7 +14,7 @@
         Height="900"
         Width="1500"
         d:DesignWidth="500"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterScreen"        
         Closing="Window_Closing">
     <Window.Resources>
         <ObjectDataProvider MethodName="GetValues"

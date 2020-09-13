@@ -68,7 +68,7 @@ namespace CppAstEditor
         {
             base.OnExit(e);
 
-            NativeLibrary.Free(_handle);
+            //NativeLibrary.Free(_handle);
 
             _mainWindow.UpdateAndSaveSettings();
 

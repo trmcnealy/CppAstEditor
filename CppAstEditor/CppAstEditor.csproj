@@ -1,5 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(GlobalVersioning.props))" />
+
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -18,22 +21,15 @@
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.0.1" />
-    <PackageReference Include="CppAst" Version="0.7.3" />
-    <PackageReference Include="CppAst.CodeGen" Version="0.4.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Settings.Designer.cs">
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
+    <PackageReference Include="CppAst" Version="0.8.0-alpha-001" />
+    <PackageReference Include="CppAst.CodeGen" Version="0.5.0-alpha-001" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>CppAstEditor</CustomToolNamespace>
     </None>
   </ItemGroup>
 
