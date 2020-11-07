@@ -1,5 +1,7 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Configuration;
@@ -8,8 +10,11 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -19,22 +24,59 @@ using CppAst;
 using CppAst.CodeGen.Common;
 using CppAst.CodeGen.CSharp;
 
-using ICSharpCode.AvalonEdit.Document;
+using JitBuddy;
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Win32;
 
 using Zio;
 using Zio.FileSystems;
 
+using CSharpCompilation = CppAst.CodeGen.CSharp.CSharpCompilation;
+using TextDocument = ICSharpCode.AvalonEdit.Document.TextDocument;
+using TypeInfo = System.Reflection.TypeInfo;
+
 namespace CppAstEditor
 {
+    internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
+    {
+        internal static readonly AssemblyLoadContext Default = new IndividualAssemblyLoadContext();
+
+        internal IndividualAssemblyLoadContext() : base("Dummy", true)
+        {
+        }
+    }
+
     public partial class MainWindow : INotifyPropertyChanged, IDisposable
     {
+        private static readonly Func<string, string> dummyClass = body =>
+                                                                  {
+                                                                      string html = "internal static class DummyClass {" + body + "}";
+
+                                                                      return html;
+                                                                  };
+
+        private readonly DispatcherTimer _timer = new DispatcherTimer
+        {
+            Interval = new TimeSpan(0, 0, 0, 0, 350)
+        };
+
+        private readonly DispatcherTimer _jitTimer = new DispatcherTimer
+        {
+            Interval = new TimeSpan(0, 0, 0, 0, 350)
+        };
+
         private CSharpConverterOptions _converterOptions;
 
         private TextDocument _cppText = new TextDocument();
 
         private TextDocument _cSharpText = new TextDocument();
+
+        private TextDocument _csJitText = new TextDocument();
+
+        private TextDocument _asmJitText = new TextDocument();
 
         private CSharpConverterOptions ConverterOptions
         {
@@ -60,16 +102,24 @@ namespace CppAstEditor
             set { SetProperty(ref _cSharpText, value); }
         }
 
-        private readonly DispatcherTimer _timer = new DispatcherTimer
+        public TextDocument CsJitText
         {
-            Interval = new TimeSpan(0, 0, 0, 0, 350)
-        };
+            get { return _csJitText; }
+            set { SetProperty(ref _csJitText, value); }
+        }
+
+        public TextDocument AsmJitText
+        {
+            get { return _asmJitText; }
+            set { SetProperty(ref _asmJitText, value); }
+        }
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _timer.Tick += Timer_Tick;
+            _timer.Tick    += Timer_Tick;
+            _jitTimer.Tick += JitTimer_Tick;
 
             DataContext = this;
 
@@ -108,13 +158,6 @@ namespace CppAstEditor
             };
 
             Initialize();
-        }
-
-        private void Window_Closing(object          sender,
-                                    CancelEventArgs e)
-        {
-            Console.WriteLine("Window_Closing.");
-            Dispose();
         }
 
         public void Dispose()
@@ -190,18 +233,6 @@ namespace CppAstEditor
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
         }
 
-        private void Default_SettingsLoaded(object                  sender,
-                                            SettingsLoadedEventArgs e)
-        {
-            Console.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
-        }
-
-        private void Default_SettingsSaving(object          sender,
-                                            CancelEventArgs e)
-        {
-            Console.WriteLine("Saving app settings.");
-        }
-
         public void UpdateAndSaveSettings()
         {
             try
@@ -226,13 +257,6 @@ namespace CppAstEditor
             }
         }
 
-        private void ImportSettingsCommand_Executed(object          sender,
-                                                    RoutedEventArgs e)
-        {
-            ImportSettings();
-            Initialize();
-        }
-
         public void ImportSettings()
         {
             OpenFileDialog dlg = new OpenFileDialog
@@ -253,7 +277,7 @@ namespace CppAstEditor
 
             using StreamReader sr = new StreamReader(filename);
 
-            DtoSettings dto =null;
+            DtoSettings dto = null;
 
             try
             {
@@ -300,12 +324,6 @@ namespace CppAstEditor
             TypedefCodeGenKind               = dto.Options.TypedefCodeGenKind;
         }
 
-        private void ExportSettingsCommand_Executed(object          sender,
-                                                    RoutedEventArgs e)
-        {
-            ExportSettings();
-        }
-
         public void ExportSettings()
         {
             SaveFileDialog dlg = new SaveFileDialog
@@ -337,6 +355,38 @@ namespace CppAstEditor
             catch(FileNotFoundException)
             {
             }
+        }
+
+        private void Window_Closing(object          sender,
+                                    CancelEventArgs e)
+        {
+            Console.WriteLine("Window_Closing.");
+            Dispose();
+        }
+
+        private void Default_SettingsLoaded(object                  sender,
+                                            SettingsLoadedEventArgs e)
+        {
+            Console.WriteLine(e.Provider.ApplicationName + " settings have been loaded.");
+        }
+
+        private void Default_SettingsSaving(object          sender,
+                                            CancelEventArgs e)
+        {
+            Console.WriteLine("Saving app settings.");
+        }
+
+        private void ImportSettingsCommand_Executed(object          sender,
+                                                    RoutedEventArgs e)
+        {
+            ImportSettings();
+            Initialize();
+        }
+
+        private void ExportSettingsCommand_Executed(object          sender,
+                                                    RoutedEventArgs e)
+        {
+            ExportSettings();
         }
 
         private static string ComplieCode(string                 text,
@@ -521,6 +571,108 @@ namespace CppAstEditor
             }
 
             e.Handled = true;
+        }
+
+        private void JitTimer_Tick(object    sender,
+                                EventArgs e)
+        {
+            _jitTimer.Stop();
+
+            if(_csJitText.TextLength > 0)
+            {
+                AsmJitTextBox.Text = ComplieCs(CsJitTextBox.Text);
+            }
+        }
+
+        private void CsJitTextBox_DocumentChanged(object    sender,
+                                                  EventArgs e)
+        {
+            _jitTimer.Stop();
+            _jitTimer.Start();
+        }
+
+        private void CsJitTextBox_TextChanged(object    sender,
+                                              EventArgs e)
+        {
+            _jitTimer.Stop();
+            _jitTimer.Start();
+        }
+
+        private static string ComplieCs(string code)
+        {
+            //Compilation compilation = sourceLanguage.CreateLibraryCompilation(assemblyName: "InMemoryAssembly", enableOptimisations: false).AddReferences(_references).AddSyntaxTrees(syntaxTree);
+
+            string assemblyName    = "DummyAssembly.dll";
+            string moduleName      = "DummyAssembly";
+            string mainTypeName    = "DummyClass";
+            string scriptClassName = "DummyClass";
+
+            IReadOnlyCollection<MetadataReference> _references = new[]
+            {
+                MetadataReference.CreateFromFile(typeof(Binder).GetTypeInfo().Assembly.Location), MetadataReference.CreateFromFile(typeof(ValueTuple<>).GetTypeInfo().Assembly.Location)
+            };
+
+            //var options = new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(   OutputKind.DynamicallyLinkedLibrary, OptimizationLevel.Release,          true);
+
+            CSharpLanguage sourceLanguage = new CSharpLanguage();
+
+            SyntaxTree syntaxTree = sourceLanguage.ParseText(dummyClass(code), SourceCodeKind.Regular);
+
+            Compilation compilation = sourceLanguage.CreateLibraryCompilation(assemblyName).AddReferences(_references).AddSyntaxTrees(syntaxTree);
+
+            MemoryStream stream     = new MemoryStream();
+            EmitResult   emitResult = compilation.Emit(stream);
+            string       result     = string.Empty;
+
+            if(!emitResult.Success)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                foreach(Diagnostic diagnostic in emitResult.Diagnostics)
+                {
+                    sb.AppendLine(diagnostic.GetMessage());
+                }
+
+                result = sb.ToString();
+            }
+            else
+            {
+                stream.Position = 0; //.Seek(0, SeekOrigin.Begin);
+
+                Assembly dummyAssembly = new IndividualAssemblyLoadContext().LoadFromStream(stream);
+
+                TypeInfo? types = dummyAssembly.DefinedTypes.FirstOrDefault(type => type.Name.Contains(mainTypeName));
+
+                if(types != null)
+                {
+                    MethodInfo[] methodInfos = types.GetMethods();
+
+                    StringBuilder sb = new StringBuilder();
+
+                    foreach(MethodInfo methodInfo in methodInfos)
+                    {
+                        if((methodInfo.Name == "GetType" || methodInfo.Name == "GetHashCode" || methodInfo.Name == "Equals" || methodInfo.Name == "ToString") &&
+                           methodInfo.IsHideBySig)
+                        {
+                            continue;
+                        }
+
+                        sb.AppendLine($"//{methodInfo.Name}");
+                        sb.AppendLine(methodInfo.ToAsm());
+                    }
+
+                    result = sb.ToString();
+                }
+
+                //IndividualAssemblyLoadContext.Default.Unload();
+            }
+
+            return result;
+        }
+
+        private void AsmJitTextBox_DocumentChanged(object    sender,
+                                                   EventArgs e)
+        {
         }
 
         #region ConverterOptions
