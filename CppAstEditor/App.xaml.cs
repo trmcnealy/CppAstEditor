@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 
@@ -13,9 +14,63 @@ namespace CppAstEditor
     /// </summary>
     public partial class App
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static string GetOSArchitecture()
+        {
+            switch(RuntimeInformation.OSArchitecture)
+            {
+                case Architecture.X86:
+                {
+                    return "x86";
+                }
+                case Architecture.X64:
+                {
+                    return "x64";
+                }
+                case Architecture.Arm:
+                {
+                    return "Arm";
+                }
+                case Architecture.Arm64:
+                {
+                    return "Arm64";
+                }
+            }
+
+            throw new NotSupportedException();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        private static string GetOperatingSystem()
+        {
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return "win";
+            }
+            
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return "linux";
+            }
+            
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return "osx";
+            }
+            
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            {
+                return "freebsd";
+            }
+
+            throw new NotSupportedException();
+        }
+        
         static App()
         {
             InstallExceptionHandlers();
+
+            NativeLibrary.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", $"{GetOperatingSystem()}-{GetOSArchitecture()}","native","libclang.dll"));
         }
 
         static void InstallExceptionHandlers()

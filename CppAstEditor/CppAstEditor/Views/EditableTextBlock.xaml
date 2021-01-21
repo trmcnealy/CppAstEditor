@@ -1,0 +1,54 @@
+﻿<UserControl x:Name="ThisEditableTextBlock"
+             x:Class="CppAstEditor.EditableTextBlock"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="30"
+             d:DesignWidth="200"
+             MouseLeftButtonDown="ThisEditableTextBlock_MouseLeftButtonDown"
+             PreviewKeyDown="EditBox_PreviewKeyDown"
+             PreviewMouseDown="DisplayBox_MouseDown">
+    <Grid>
+        <!--<ListViewItem x:Name="DisplayBox"
+                        HorizontalAlignment="Stretch"
+                    Content="{Binding Text, ElementName=ThisEditableTextBlock}"
+                    VerticalContentAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Padding="0,0,0,0"
+                    BorderThickness="0,0,0,0"
+
+
+
+        />-->
+        <TextBlock x:Name="DisplayBox"
+                   HorizontalAlignment="Stretch"
+                   Text="{Binding Path=Text, ElementName=ThisEditableTextBlock}"
+                   Cursor="IBeam"
+                   FontFamily="{Binding Path=FontFamily, ElementName=ThisEditableTextBlock}"
+                   FontSize="{Binding Path=FontSize, ElementName=ThisEditableTextBlock}"
+                   FontStretch="{Binding Path=FontStretch, ElementName=ThisEditableTextBlock}"
+                   FontStyle="{Binding Path=FontStyle, ElementName=ThisEditableTextBlock}"
+                   FontWeight="{Binding Path=FontWeight, ElementName=ThisEditableTextBlock}"
+                   TextAlignment="{Binding Path=TextAlignment, ElementName=ThisEditableTextBlock}"
+                   TextDecorations="{Binding Path=TextDecorations, ElementName=ThisEditableTextBlock}"
+                   TextEffects="{Binding Path=TextEffects, ElementName=ThisEditableTextBlock}"
+                   TextTrimming="{Binding Path=TextTrimming, ElementName=ThisEditableTextBlock}"
+                   TextWrapping="{Binding Path=TextWrapping, ElementName=ThisEditableTextBlock}"/>
+
+        <TextBox x:Name="EditBox"
+                 HorizontalAlignment="Stretch"
+                 Text="{Binding Path=Text, Mode=TwoWay, ElementName=ThisEditableTextBlock}"
+                 Visibility="Collapsed"
+                 TextChanged="EditBox_TextChanged"
+                 FontFamily="{Binding FontFamily, ElementName=ThisEditableTextBlock}"
+                 FontSize="{Binding Path=FontSize, ElementName=ThisEditableTextBlock}"
+                 FontStretch="{Binding Path=FontStretch, ElementName=ThisEditableTextBlock}"
+                 FontStyle="{Binding Path=FontStyle, ElementName=ThisEditableTextBlock}"
+                 FontWeight="{Binding Path=FontWeight, ElementName=ThisEditableTextBlock}"
+                 TextAlignment="{Binding Path=TextAlignment, ElementName=ThisEditableTextBlock}"
+                 TextDecorations="{Binding Path=TextDecorations, ElementName=ThisEditableTextBlock}"
+                 TextWrapping="{Binding Path=TextWrapping, ElementName=ThisEditableTextBlock}"/>
+    </Grid>
+</UserControl>
