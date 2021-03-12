@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
 using CppAst;
@@ -194,24 +193,36 @@ namespace CppAstEditor
             IncludeFolders = new List<string>(settings.IncludeFolders.Count);
             SystemIncludeFolders = new List<string>(settings.SystemIncludeFolders.Count);
 
-            foreach (string item in settings.Defines)
+            foreach (string? item in settings.Defines)
             {
-                Defines.Add(item);
+                if(item != null)
+                {
+                    Defines.Add(item);
+                }
             }
 
-            foreach (string item in settings.AdditionalArguments)
+            foreach (string? item in settings.AdditionalArguments)
             {
-                AdditionalArguments.Add(item);
+                if(item != null)
+                {
+                    AdditionalArguments.Add(item);
+                }
             }
 
-            foreach (string item in settings.IncludeFolders)
+            foreach (string? item in settings.IncludeFolders)
             {
-                IncludeFolders.Add(item);
+                if(item != null)
+                {
+                    IncludeFolders.Add(item);
+                }
             }
 
-            foreach (string item in settings.SystemIncludeFolders)
+            foreach (string? item in settings.SystemIncludeFolders)
             {
-                SystemIncludeFolders.Add(item);
+                if(item != null)
+                {
+                    SystemIncludeFolders.Add(item);
+                }
             }
 
 

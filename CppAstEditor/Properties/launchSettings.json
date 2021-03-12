@@ -1,7 +1,8 @@
 {
   "profiles": {
     "CppAstEditor": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "nativeDebugging": true
     }
   }
 }

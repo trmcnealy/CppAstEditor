@@ -66,5 +66,281 @@ namespace CppAstEditor {
                 this["SystemIncludeFolders"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("X86_64")]
+        public global::CppAst.CppTargetCpu TargetCpu {
+            get {
+                return ((global::CppAst.CppTargetCpu)(this["TargetCpu"]));
+            }
+            set {
+                this["TargetCpu"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TargetCpuSub {
+            get {
+                return ((string)(this["TargetCpuSub"]));
+            }
+            set {
+                this["TargetCpuSub"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("w64")]
+        public string TargetVendor {
+            get {
+                return ((string)(this["TargetVendor"]));
+            }
+            set {
+                this["TargetVendor"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("windows")]
+        public string TargetSystem {
+            get {
+                return ((string)(this["TargetSystem"]));
+            }
+            set {
+                this["TargetSystem"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("gnu")]
+        public string TargetAbi {
+            get {
+                return ((string)(this["TargetAbi"]));
+            }
+            set {
+                this["TargetAbi"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ParseAsCpp {
+            get {
+                return ((bool)(this["ParseAsCpp"]));
+            }
+            set {
+                this["ParseAsCpp"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ParseComments {
+            get {
+                return ((bool)(this["ParseComments"]));
+            }
+            set {
+                this["ParseComments"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ParseMacros {
+            get {
+                return ((bool)(this["ParseMacros"]));
+            }
+            set {
+                this["ParseMacros"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AutoSquashTypedef {
+            get {
+                return ((bool)(this["AutoSquashTypedef"]));
+            }
+            set {
+                this["AutoSquashTypedef"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ParseSystemIncludes {
+            get {
+                return ((bool)(this["ParseSystemIncludes"]));
+            }
+            set {
+                this["ParseSystemIncludes"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ParseAttributes {
+            get {
+                return ((bool)(this["ParseAttributes"]));
+            }
+            set {
+                this["ParseAttributes"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Wrap")]
+        public global::CppAst.CodeGen.CSharp.CppTypedefCodeGenKind TypedefCodeGenKind {
+            get {
+                return ((global::CppAst.CodeGen.CSharp.CppTypedefCodeGenKind)(this["TypedefCodeGenKind"]));
+            }
+            set {
+                this["TypedefCodeGenKind"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("/LibNative.generated.cs")]
+        public string DefaultOutputFilePath {
+            get {
+                return ((string)(this["DefaultOutputFilePath"]));
+            }
+            set {
+                this["DefaultOutputFilePath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("LibNative")]
+        public string DefaultNamespace {
+            get {
+                return ((string)(this["DefaultNamespace"]));
+            }
+            set {
+                this["DefaultNamespace"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("libnative")]
+        public string DefaultClassLib {
+            get {
+                return ((string)(this["DefaultClassLib"]));
+            }
+            set {
+                this["DefaultClassLib"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DefaultDllImportNameAndArguments {
+            get {
+                return ((string)(this["DefaultDllImportNameAndArguments"]));
+            }
+            set {
+                this["DefaultDllImportNameAndArguments"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AllowFixedSizeBuffers {
+            get {
+                return ((bool)(this["AllowFixedSizeBuffers"]));
+            }
+            set {
+                this["AllowFixedSizeBuffers"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Ansi")]
+        public global::System.Runtime.InteropServices.CharSet DefaultCharSet {
+            get {
+                return ((global::System.Runtime.InteropServices.CharSet)(this["DefaultCharSet"]));
+            }
+            set {
+                this["DefaultCharSet"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool DispatchOutputPerInclude {
+            get {
+                return ((bool)(this["DispatchOutputPerInclude"]));
+            }
+            set {
+                this["DispatchOutputPerInclude"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("LPStr")]
+        public global::CppAst.CodeGen.CSharp.CSharpUnmanagedKind DefaultMarshalForString {
+            get {
+                return ((global::CppAst.CodeGen.CSharp.CSharpUnmanagedKind)(this["DefaultMarshalForString"]));
+            }
+            set {
+                this["DefaultMarshalForString"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Bool")]
+        public global::CppAst.CodeGen.CSharp.CSharpUnmanagedKind DefaultMarshalForBool {
+            get {
+                return ((global::CppAst.CodeGen.CSharp.CSharpUnmanagedKind)(this["DefaultMarshalForBool"]));
+            }
+            set {
+                this["DefaultMarshalForBool"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GenerateAsInternal {
+            get {
+                return ((bool)(this["GenerateAsInternal"]));
+            }
+            set {
+                this["GenerateAsInternal"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GenerateEnumItemAsFields {
+            get {
+                return ((bool)(this["GenerateEnumItemAsFields"]));
+            }
+            set {
+                this["GenerateEnumItemAsFields"] = value;
+            }
+        }
     }
 }

@@ -1,18 +1,18 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 
-using CppAst.CodeGen.CSharp;
+using Prism.DryIoc;
+using Prism.Ioc;
 
 namespace CppAstEditor
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App
+    public partial class App : PrismApplication
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static string GetOSArchitecture()
@@ -70,7 +70,17 @@ namespace CppAstEditor
         {
             InstallExceptionHandlers();
 
-            NativeLibrary.Load(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", $"{GetOperatingSystem()}-{GetOSArchitecture()}","native","libclang.dll"));
+            string libclangRuntimesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runtimes", $"{GetOperatingSystem()}-{GetOSArchitecture()}", "native", "libclang.dll");
+            string libclangPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "libclang.dll");
+
+            if(File.Exists(libclangPath))
+            {
+                NativeLibrary.Load(libclangPath);
+            }
+            else if(File.Exists(libclangRuntimesPath))
+            {
+                NativeLibrary.Load(libclangRuntimesPath);
+            }
         }
 
         static void InstallExceptionHandlers()
@@ -79,7 +89,7 @@ namespace CppAstEditor
                                                            e) => ShowException(e.ExceptionObject as Exception);
         }
 
-        static void ShowException(Exception ex)
+        static void ShowException(Exception? ex)
         {
             string msg = ex?.ToString() ?? "Unknown exception";
             MessageBox.Show(msg, "CppAstEditor", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -91,45 +101,57 @@ namespace CppAstEditor
 
         private IntPtr _handle;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override Window CreateShell()
         {
-            base.OnStartup(e);
-
-
-
-            //string operatingSystem      = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "linux";
-            //string platformArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x64" : "x86";
-
-            //string nativeLibraryPath = $"runtimes\\{operatingSystem}-{platformArchitecture}\\native";
-
-            //Assembly assembly = typeof(CSharpConverterOptions).Assembly;
-
-            //int index = assembly.Location.LastIndexOf("\\", StringComparison.Ordinal);
-
-            //if(Directory.Exists(Path.Combine(assembly.Location.Substring(0, index), nativeLibraryPath)))
-            //{
-            //    _handle = NativeLibrary.Load(Path.Combine(nativeLibraryPath, LibraryName + ".dll"));
-            //}
-            //else
-            //{
-            //    _handle = NativeLibrary.Load(LibraryName + ".dll");
-            //}
-
-            _mainWindow = new MainWindow();
-            _mainWindow.Show();
+            return Container.Resolve<MainWindow>();
         }
 
-        protected override void OnExit(ExitEventArgs e)
+        protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            base.OnExit(e);
+            containerRegistry.RegisterSingleton<MainWindowModel>();
 
-            //NativeLibrary.Free(_handle);
-
-            _mainWindow.UpdateAndSaveSettings();
-
-            _mainWindow.Close();
-
-            e.ApplicationExitCode = 0;
+            containerRegistry.RegisterForNavigation<MainWindow, MainWindowModel>();
         }
+
+        //protected override void OnStartup(StartupEventArgs e)
+        //{
+        //    base.OnStartup(e);
+
+
+
+        //    //string operatingSystem      = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "linux";
+        //    //string platformArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x64" : "x86";
+
+        //    //string nativeLibraryPath = $"runtimes\\{operatingSystem}-{platformArchitecture}\\native";
+
+        //    //Assembly assembly = typeof(CSharpConverterOptions).Assembly;
+
+        //    //int index = assembly.Location.LastIndexOf("\\", StringComparison.Ordinal);
+
+        //    //if(Directory.Exists(Path.Combine(assembly.Location.Substring(0, index), nativeLibraryPath)))
+        //    //{
+        //    //    _handle = NativeLibrary.Load(Path.Combine(nativeLibraryPath, LibraryName + ".dll"));
+        //    //}
+        //    //else
+        //    //{
+        //    //    _handle = NativeLibrary.Load(LibraryName + ".dll");
+        //    //}
+
+        //    _mainWindow = new MainWindow();
+        //    _mainWindow.Show();
+        //}
+
+        //protected override void OnExit(ExitEventArgs e)
+        //{
+        //    base.OnExit(e);
+
+        //    //NativeLibrary.Free(_handle);
+
+        //    _mainWindow.UpdateAndSaveSettings();
+
+        //    _mainWindow.Close();
+
+        //    e.ApplicationExitCode = 0;
+        //}
     }
 }

@@ -69,7 +69,7 @@ namespace CppAstEditor
             }
         }
 
-        private void ItemsPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void ItemsPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
         }

@@ -1,17 +1,18 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Configuration;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text;
-using System.Windows.Threading;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Windows.Controls;
 using System.Xml.Serialization;
 
 using CppAst;
@@ -23,6 +24,9 @@ using JitBuddy;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.Win32;
+
+using Prism.Commands;
+using Prism.Mvvm;
 
 using Zio;
 using Zio.FileSystems;
@@ -43,7 +47,7 @@ namespace CppAstEditor
         }
     }
 
-    public class MainWindowModel : INotifyPropertyChanged, IDisposable
+    public class MainWindowModel : BindableBase
     {
         private static readonly Func<string, string> dummyClass = body =>
                                                                   {
@@ -51,16 +55,6 @@ namespace CppAstEditor
 
                                                                       return html;
                                                                   };
-
-        public readonly DispatcherTimer Timer = new DispatcherTimer
-        {
-            Interval = new TimeSpan(0, 0, 0, 0, 350)
-        };
-
-        public readonly DispatcherTimer JitTimer = new DispatcherTimer
-        {
-            Interval = new TimeSpan(0, 0, 0, 0, 350)
-        };
 
         private CSharpConverterOptions _converterOptions;
 
@@ -108,37 +102,74 @@ namespace CppAstEditor
             set { SetProperty(ref _asmJitText, value); }
         }
 
+        public DelegateCommand                    ClosingCommand                          { get; set; }
+        public DelegateCommand                    ConvertCodeCppToCsCommand               { get; set; }
+        public DelegateCommand                    ConvertCodeCsToAsmCommand               { get; set; }
+        public DelegateCommand                    ImportSettingsCommand                   { get; set; }
+        public DelegateCommand                    ExportSettingsCommand                   { get; set; }
+        public DelegateCommand                    DefinesAddButtonCommand                 { get; set; }
+        public DelegateCommand                    DefinesRemoveButtonCommand              { get; set; }
+        public DelegateCommand                    AdditionalArgumentsAddButtonCommand     { get; set; }
+        public DelegateCommand                    AdditionalArgumentsRemoveButtonCommand  { get; set; }
+        public DelegateCommand                    IncludeFoldersAddButtonCommand          { get; set; }
+        public DelegateCommand                    IncludeFoldersRemoveButtonCommand       { get; set; }
+        public DelegateCommand                    SystemIncludeFoldersAddButtonCommand    { get; set; }
+        public DelegateCommand                    SystemIncludeFoldersRemoveButtonCommand { get; set; }
+        public DelegateCommand<EditableTextBlock> DefinesTextBoxCommand                   { get; set; }
+        public DelegateCommand<EditableTextBlock> AdditionalArgumentsTextBoxCommand       { get; set; }
+        public DelegateCommand<EditableTextBlock> IncludeFoldersTextBoxCommand            { get; set; }
+        public DelegateCommand<EditableTextBlock> SystemIncludeFoldersTextBoxCommand      { get; set; }
+
         public MainWindowModel()
         {
             //string defaultFolder = System.Environment.GetEnvironmentVariable("TEMP") ?? System.Environment.GetEnvironmentVariable("TMP");
+            
+            ClosingCommand                          = new DelegateCommand(OnClosing);
+            ConvertCodeCppToCsCommand               = new DelegateCommand(OnConvertCodeCppToCs);
+            ConvertCodeCsToAsmCommand               = new DelegateCommand(OnConvertCodeCsToAsm);
+            ImportSettingsCommand                   = new DelegateCommand(OnImportSettings);
+            ExportSettingsCommand                   = new DelegateCommand(OnExportSettings);
+            DefinesAddButtonCommand                 = new DelegateCommand(OnDefinesAddButton);
+            DefinesRemoveButtonCommand              = new DelegateCommand(OnDefinesRemoveButton);
+            AdditionalArgumentsAddButtonCommand     = new DelegateCommand(OnAdditionalArgumentsAddButton);
+            AdditionalArgumentsRemoveButtonCommand  = new DelegateCommand(OnAdditionalArgumentsRemoveButton);
+            IncludeFoldersAddButtonCommand          = new DelegateCommand(OnIncludeFoldersAddButton);
+            IncludeFoldersRemoveButtonCommand       = new DelegateCommand(OnIncludeFoldersRemoveButton);
+            SystemIncludeFoldersAddButtonCommand    = new DelegateCommand(OnSystemIncludeFoldersAddButton);
+            SystemIncludeFoldersRemoveButtonCommand = new DelegateCommand(OnSystemIncludeFoldersRemoveButton);
+            DefinesTextBoxCommand                   = new DelegateCommand<EditableTextBlock>(OnDefinesTextBox);
+            AdditionalArgumentsTextBoxCommand       = new DelegateCommand<EditableTextBlock>(OnAdditionalArgumentsTextBox);
+            IncludeFoldersTextBoxCommand            = new DelegateCommand<EditableTextBlock>(OnIncludeFoldersTextBox);
+            SystemIncludeFoldersTextBoxCommand      = new DelegateCommand<EditableTextBlock>(OnSystemIncludeFoldersTextBox);
+
 
             _converterOptions = new CSharpConverterOptions
             {
                 //C++
-                TargetCpu           = CppTargetCpu.X86_64,
-                TargetCpuSub        = string.Empty,
-                TargetVendor        = "w64",
-                TargetSystem        = "windows",
-                TargetAbi           = "gnu",
-                ParseAsCpp          = true,
-                ParseComments       = false,
-                ParseMacros         = true,
-                AutoSquashTypedef   = true,
-                ParseSystemIncludes = false,
-                ParseAttributes     = true,
+                TargetCpu           = Settings.Default.TargetCpu,
+                TargetCpuSub        = Settings.Default.TargetCpuSub,
+                TargetVendor        = Settings.Default.TargetVendor,
+                TargetSystem        = Settings.Default.TargetSystem,
+                TargetAbi           = Settings.Default.TargetAbi,
+                ParseAsCpp          = Settings.Default.ParseAsCpp,
+                ParseComments       = Settings.Default.ParseComments,
+                ParseMacros         = Settings.Default.ParseMacros,
+                AutoSquashTypedef   = Settings.Default.AutoSquashTypedef,
+                ParseSystemIncludes = Settings.Default.ParseSystemIncludes,
+                ParseAttributes     = Settings.Default.ParseAttributes,
                 //C#
-                TypedefCodeGenKind               = CppTypedefCodeGenKind.NoWrap,
-                DefaultOutputFilePath            = (UPath)"/LibNative.generated.cs", //(UPath)Path.Combine(defaultFolder, "CppAstEditor.generated.cs"),
-                DefaultNamespace                 = "LibNative",
-                DefaultClassLib                  = "libnative",
-                DefaultDllImportNameAndArguments = "",
-                AllowFixedSizeBuffers            = true,
-                DefaultCharSet                   = CharSet.Ansi,
-                DispatchOutputPerInclude         = false,
-                DefaultMarshalForString          = new CSharpMarshalAttribute(CSharpUnmanagedKind.LPStr),
-                DefaultMarshalForBool            = new CSharpMarshalAttribute(CSharpUnmanagedKind.Bool),
-                GenerateAsInternal               = false,
-                GenerateEnumItemAsFields         = false
+                TypedefCodeGenKind               = Settings.Default.TypedefCodeGenKind,
+                DefaultOutputFilePath            = (UPath)Settings.Default.DefaultOutputFilePath, //(UPath)Path.Combine(defaultFolder, "CppAstEditor.generated.cs"),
+                DefaultNamespace                 = Settings.Default.DefaultNamespace,
+                DefaultClassLib                  = Settings.Default.DefaultClassLib,
+                DefaultDllImportNameAndArguments = Settings.Default.DefaultDllImportNameAndArguments,
+                AllowFixedSizeBuffers            = Settings.Default.AllowFixedSizeBuffers,
+                DefaultCharSet                   = Settings.Default.DefaultCharSet,
+                DispatchOutputPerInclude         = Settings.Default.DispatchOutputPerInclude,
+                DefaultMarshalForString          = new CSharpMarshalAttribute(Settings.Default.DefaultMarshalForString),
+                DefaultMarshalForBool            = new CSharpMarshalAttribute(Settings.Default.DefaultMarshalForBool),
+                GenerateAsInternal               = Settings.Default.GenerateAsInternal,
+                GenerateEnumItemAsFields         = Settings.Default.GenerateEnumItemAsFields
             };
 
             Settings.Default.SettingsLoaded += Default_SettingsLoaded;
@@ -205,46 +236,17 @@ namespace CppAstEditor
             }
 
             Defines              = new BindableCollection<string>(ConverterOptions.Defines);
-            IncludeFolders       = new BindableCollection<string?>(ConverterOptions.IncludeFolders);
+            IncludeFolders       = new BindableCollection<string>(ConverterOptions.IncludeFolders);
             AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
 
             RaisePropertyChanged(nameof(Defines));
             RaisePropertyChanged(nameof(IncludeFolders));
             RaisePropertyChanged(nameof(AdditionalArguments));
-            RaisePropertyChanged(nameof(SystemIncludeFolders)); //Settings.Default.SettingsLoaded += Default_SettingsLoaded;
-            Settings.Default.SettingsSaving += Default_SettingsSaving;
+            RaisePropertyChanged(nameof(SystemIncludeFolders));
 
             //string defaultFolder = System.Environment.GetEnvironmentVariable("TEMP") ?? System.Environment.GetEnvironmentVariable("TMP");
 
-            _converterOptions = new CSharpConverterOptions
-            {
-                //C++
-                TargetCpu           = CppTargetCpu.X86_64,
-                TargetCpuSub        = string.Empty,
-                TargetVendor        = "w64",
-                TargetSystem        = "windows",
-                TargetAbi           = "gnu",
-                ParseAsCpp          = true,
-                ParseComments       = false,
-                ParseMacros         = true,
-                AutoSquashTypedef   = true,
-                ParseSystemIncludes = false,
-                ParseAttributes     = true,
-                //C#
-                TypedefCodeGenKind               = CppTypedefCodeGenKind.NoWrap,
-                DefaultOutputFilePath            = (UPath)"/LibNative.generated.cs", //(UPath)Path.Combine(defaultFolder, "CppAstEditor.generated.cs"),
-                DefaultNamespace                 = "LibNative",
-                DefaultClassLib                  = "libnative",
-                DefaultDllImportNameAndArguments = "",
-                AllowFixedSizeBuffers            = true,
-                DefaultCharSet                   = CharSet.Ansi,
-                DispatchOutputPerInclude         = false,
-                DefaultMarshalForString          = new CSharpMarshalAttribute(CSharpUnmanagedKind.LPStr),
-                DefaultMarshalForBool            = new CSharpMarshalAttribute(CSharpUnmanagedKind.Bool),
-                GenerateAsInternal               = false,
-                GenerateEnumItemAsFields         = false
-            };
 
             //if (Settings.Default.Defines != null)
             //{
@@ -307,7 +309,7 @@ namespace CppAstEditor
             //}
 
             Defines              = new BindableCollection<string>(ConverterOptions.Defines);
-            IncludeFolders       = new BindableCollection<string?>(ConverterOptions.IncludeFolders);
+            IncludeFolders       = new BindableCollection<string>(ConverterOptions.IncludeFolders);
             AdditionalArguments  = new BindableCollection<string>(ConverterOptions.AdditionalArguments);
             SystemIncludeFolders = new BindableCollection<string>(ConverterOptions.SystemIncludeFolders);
 
@@ -315,6 +317,147 @@ namespace CppAstEditor
             RaisePropertyChanged(nameof(IncludeFolders));
             RaisePropertyChanged(nameof(AdditionalArguments));
             RaisePropertyChanged(nameof(SystemIncludeFolders));
+        }
+
+        public void OnClosing()
+        {
+            UpdateAndSaveSettings();
+        }
+
+        public void OnConvertCodeCppToCs()
+        {
+            if(CppText.TextLength > 0)
+            {
+                ConverterOptions.Defines.Clear();
+                ConverterOptions.Defines.AddRange(Defines);
+                ConverterOptions.AdditionalArguments.Clear();
+                ConverterOptions.AdditionalArguments.AddRange(AdditionalArguments);
+                ConverterOptions.IncludeFolders.Clear();
+                ConverterOptions.IncludeFolders.AddRange(IncludeFolders);
+                ConverterOptions.SystemIncludeFolders.Clear();
+                ConverterOptions.SystemIncludeFolders.AddRange(SystemIncludeFolders);
+
+                string newCode = ComplieCode(CppText.Text, ConverterOptions);
+                
+                CSharpText.Text = ConvertDllImports(newCode);
+            }
+        }
+        
+        private static string ConvertDllImports(string code)
+        {
+            //[DllImport(oiujl, CallingConvention = CallingConvention.Cdecl)]
+            //public static extern IntPtr LoadLibraryExA(IntPtr lpLibFileName, IntPtr hFile, uint dwFlags);
+
+            string[] lines = code.Split(new char[]{'\r','\n'}, StringSplitOptions.RemoveEmptyEntries);
+
+            Parallel.For(0,
+                         lines.Length,
+                         (index) =>
+                         //for (int index = 0; index < lines.Length; ++index)
+                         {
+                             if(lines[index].StartsWith("        [DllImport"))
+                             {
+                                 lines[index] = "        [SuppressGCTransition]";
+                             }
+                             else if(lines[index].StartsWith("        public static extern"))
+                             {
+                                 ReadOnlySpan<char> line = lines[index].AsSpan();
+
+                                 int firstBracket = line.IndexOf('(');
+                                 int lastBracket = line.IndexOf(')');
+
+                                 ReadOnlySpan<char> lineHeader = line.Slice(29, firstBracket - 29);
+
+                                 string[] header = lineHeader.ToString().Split(new char[]{' '}, StringSplitOptions.RemoveEmptyEntries);
+
+                                 ReadOnlySpan<char> lineTypes = line.Slice(firstBracket + 1, lastBracket - firstBracket - 1);
+
+                                 string[] parts = lineTypes.ToString().Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries);
+
+                                 string returnType = string.Join('\n', header[..^1]);
+
+                                 if(returnType == "IntPtr")
+                                 {
+                                     returnType = "nint";
+                                 }
+                                 else if(returnType == "UIntPtr")
+                                 {
+                                     returnType = "nuint";
+                                 }
+
+                                 string name = header.Last();
+
+                                 List<string> types = new(parts.Length);
+
+                                 string[] typeParts;
+                                 for (int i = 0; i < parts.Length; ++i)
+                                 {
+                                     typeParts = parts[i].Split(new char[]{' '}, StringSplitOptions.RemoveEmptyEntries);
+
+                                     if(typeParts.Length == 2)
+                                     {
+                                         if(typeParts[0] == "IntPtr")
+                                         {
+                                             types.Add("nint");
+                                         }
+                                         else if(typeParts[0] == "UIntPtr")
+                                         {
+                                             types.Add("nuint");
+                                         }
+                                         else
+                                         {
+                                             types.Add(typeParts[0]);
+                                         }
+                                     }
+                                     else if(typeParts.Length == 3)
+                                     {
+                                         if(typeParts[1] == "IntPtr")
+                                         {
+                                             types.Add($"{typeParts[0]} nint");
+                                         }
+                                         else if(typeParts[1] == "UIntPtr")
+                                         {
+                                             types.Add($"{typeParts[0]} nuint");
+                                         }
+                                         else
+                                         {
+                                             types.Add($"{typeParts[0]} {typeParts[1]}");
+                                         }
+                                     }
+
+                                 }
+
+                                 StringBuilder signature = new();
+
+                                 signature.Append("delegate* unmanaged<");
+
+                                 for (int i = 0; i < types.Count; ++i)
+                                 {
+                                     if(i > 0)
+                                     {
+                                         signature.Append(",");
+                                     }
+                                     signature.Append(types[i]);
+                                 }
+
+                                 signature.Append(",");
+                                 signature.Append(returnType);
+                                 signature.Append(">");
+                                 
+                                 lines[index] = $"        public static unsafe {signature} {name} = ({signature})NativeLibrary.GetExport(Handle, \"{name}\");";
+                             }
+                         }
+                         );
+                        
+            return string.Join('\n',lines);
+        }
+
+        public void OnConvertCodeCsToAsm()
+        {
+            if(CsJitText.TextLength > 0)
+            {
+                //AsmJitTextBox.Text = MainWindowModel.ComplieCs(CsJitTextBox.Text);
+            }
         }
 
         public void Dispose()
@@ -399,16 +542,42 @@ namespace CppAstEditor
             try
             {
                 Settings.Default.Defines.Clear();
-                Settings.Default.Defines.AddRange(ConverterOptions.Defines.Distinct().ToArray());
+                Settings.Default.Defines.AddRange(Defines.Distinct().ToArray());
 
                 Settings.Default.AdditionalArguments.Clear();
-                Settings.Default.AdditionalArguments.AddRange(ConverterOptions.AdditionalArguments.Distinct().ToArray());
+                Settings.Default.AdditionalArguments.AddRange(AdditionalArguments.Distinct().ToArray());
 
                 Settings.Default.IncludeFolders.Clear();
-                Settings.Default.IncludeFolders.AddRange(ConverterOptions.IncludeFolders.Distinct().ToArray());
+                Settings.Default.IncludeFolders.AddRange(IncludeFolders.Distinct().ToArray());
 
                 Settings.Default.SystemIncludeFolders.Clear();
-                Settings.Default.SystemIncludeFolders.AddRange(ConverterOptions.SystemIncludeFolders.Distinct().ToArray());
+                Settings.Default.SystemIncludeFolders.AddRange(SystemIncludeFolders.Distinct().ToArray());
+
+
+                Settings.Default.TargetCpu           = _converterOptions.TargetCpu;
+                Settings.Default.TargetCpuSub        = _converterOptions.TargetCpuSub;
+                Settings.Default.TargetVendor        = _converterOptions.TargetVendor;
+                Settings.Default.TargetSystem        = _converterOptions.TargetSystem;
+                Settings.Default.TargetAbi           = _converterOptions.TargetAbi;
+                Settings.Default.ParseAsCpp          = _converterOptions.ParseAsCpp;
+                Settings.Default.ParseComments       = _converterOptions.ParseComments;
+                Settings.Default.ParseMacros         = _converterOptions.ParseMacros;
+                Settings.Default.AutoSquashTypedef   = _converterOptions.AutoSquashTypedef;
+                Settings.Default.ParseSystemIncludes = _converterOptions.ParseSystemIncludes;
+                Settings.Default.ParseAttributes     = _converterOptions.ParseAttributes;
+                
+                Settings.Default.TypedefCodeGenKind               = _converterOptions.TypedefCodeGenKind;
+                Settings.Default.DefaultOutputFilePath            = _converterOptions.DefaultOutputFilePath.ToString();
+                Settings.Default.DefaultNamespace                 = _converterOptions.DefaultNamespace;
+                Settings.Default.DefaultClassLib                  = _converterOptions.DefaultClassLib;
+                Settings.Default.DefaultDllImportNameAndArguments = _converterOptions.DefaultDllImportNameAndArguments;
+                Settings.Default.AllowFixedSizeBuffers            = _converterOptions.AllowFixedSizeBuffers;
+                Settings.Default.DefaultCharSet                   = _converterOptions.DefaultCharSet;
+                Settings.Default.DispatchOutputPerInclude         = _converterOptions.DispatchOutputPerInclude;
+                Settings.Default.DefaultMarshalForString          = _converterOptions.DefaultMarshalForString.UnmanagedType;
+                Settings.Default.DefaultMarshalForBool            = _converterOptions.DefaultMarshalForBool.UnmanagedType;
+                Settings.Default.GenerateAsInternal               = _converterOptions.GenerateAsInternal;
+                Settings.Default.GenerateEnumItemAsFields         = _converterOptions.GenerateEnumItemAsFields;
 
                 Settings.Default.Save();
             }
@@ -457,7 +626,7 @@ namespace CppAstEditor
 
             Defines              = new BindableCollection<string>(dto.Defines);
             AdditionalArguments  = new BindableCollection<string>(dto.AdditionalArguments);
-            IncludeFolders       = new BindableCollection<string?>(dto.IncludeFolders);
+            IncludeFolders       = new BindableCollection<string>(dto.IncludeFolders);
             SystemIncludeFolders = new BindableCollection<string>(dto.SystemIncludeFolders);
 
             ParseAsCpp                       = dto.Options.ParseAsCpp;
@@ -567,9 +736,9 @@ namespace CppAstEditor
                     result = csCompilation.Diagnostics.ToString();
                 }
             }
-            catch(Exception)
+            catch(Exception ex)
             {
-                // ignored
+                result = ex.Message;
             }
 
             return result;
@@ -988,13 +1157,13 @@ namespace CppAstEditor
                     //void CollectionChangedEventHandler(object?                          sender,
                     //                                   NotifyCollectionChangedEventArgs e)
                     //{
-                    //    switch(e.Action)
+                    //    switch (e.Action)
                     //    {
                     //        case NotifyCollectionChangedAction.Add:
                     //        {
-                    //            if(e.NewItems != null)
+                    //            if (e.NewItems != null)
                     //            {
-                    //                for(int i = 0; i < e.NewItems.Count; ++i)
+                    //                for (int i = 0; i < e.NewItems.Count; ++i)
                     //                {
                     //                    ConverterOptions.Defines.Add(e.NewItems[i] as string);
                     //                }
@@ -1004,9 +1173,9 @@ namespace CppAstEditor
                     //        }
                     //        case NotifyCollectionChangedAction.Remove:
                     //        {
-                    //            if(e.OldItems != null)
+                    //            if (e.OldItems != null)
                     //            {
-                    //                for(int i = 0; i < e.OldItems.Count; ++i)
+                    //                for (int i = 0; i < e.OldItems.Count; ++i)
                     //                {
                     //                    ConverterOptions.Defines.Remove(e.OldItems[i] as string);
                     //                }
@@ -1015,9 +1184,9 @@ namespace CppAstEditor
                     //        }
                     //        case NotifyCollectionChangedAction.Replace:
                     //        {
-                    //            if(e.NewItems != null)
+                    //            if (e.NewItems != null)
                     //            {
-                    //                for(int i = 0; i < e.NewItems.Count; ++i)
+                    //                for (int i = 0; i < e.NewItems.Count; ++i)
                     //                {
                     //                    ConverterOptions.Defines[e.NewStartingIndex + i] = e.NewItems[i] as string;
                     //                }
@@ -1032,6 +1201,7 @@ namespace CppAstEditor
                     //        }
                     //        default: throw new ArgumentOutOfRangeException();
                     //    }
+
                     //}
 
                     //Defines.CollectionChanged -= CollectionChangedEventHandler;
@@ -1144,9 +1314,9 @@ namespace CppAstEditor
 
         #region IncludeFolders
 
-        private BindableCollection<string?> _includeFolders = new();
+        private BindableCollection<string> _includeFolders = new();
 
-        public BindableCollection<string?> IncludeFolders
+        public BindableCollection<string> IncludeFolders
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get { return _includeFolders; }
@@ -1315,92 +1485,103 @@ namespace CppAstEditor
 
         #endregion
 
-        #region Binding
+        #region Commands
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual bool SetProperty<T>(ref T                      storage,
-                                              T                          value,
-                                              [CallerMemberName] string? propertyName = null)
+        private void OnDefinesAddButton()
         {
-            if(EqualityComparer<T>.Default.Equals(storage, value))
+            Defines.Add(string.Empty);
+        }
+
+        private void OnDefinesRemoveButton()
+        {
+            if(SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
             {
-                return false;
+                Defines.RemoveAt(SelectedDefinesIndex);
             }
-
-            storage = value;
-            RaisePropertyChanged(propertyName);
-
-            return true;
         }
 
-        protected virtual bool SetProperty<T>(ref T                      storage,
-                                              T                          value,
-                                              Action                     onChanged,
-                                              [CallerMemberName] string? propertyName = null)
+        private void OnImportSettings()
         {
-            if(EqualityComparer<T>.Default.Equals(storage, value))
+            ImportSettings();
+            //Initialize();
+        }
+
+        private void OnExportSettings()
+        {
+            ExportSettings();
+        }
+
+        private void OnAdditionalArgumentsAddButton()
+        {
+            AdditionalArguments.Add(string.Empty);
+        }
+
+        private void OnAdditionalArgumentsRemoveButton()
+        {
+            if(SelectedAdditionalArgumentsIndex >= 0 && SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
             {
-                return false;
+                AdditionalArguments.RemoveAt(SelectedAdditionalArgumentsIndex);
             }
-
-            storage = value;
-
-            onChanged.Invoke();
-
-            RaisePropertyChanged(propertyName);
-
-            return true;
         }
 
-        protected void RaisePropertyChanged([CallerMemberName] string? propertyName = null)
+        private void OnIncludeFoldersAddButton()
         {
-            OnPropertyChanged(propertyName);
+            IncludeFolders.Add(string.Empty);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        private void OnIncludeFoldersRemoveButton()
         {
-            OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
-        }
-
-        protected virtual void OnPropertyChanged(PropertyChangedEventArgs args)
-        {
-            PropertyChangedEventHandler? propertyChanged = PropertyChanged;
-
-            propertyChanged?.Invoke(this, args);
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        protected virtual void OnPropertyChanged<T>(Expression<Func<T>> propertyExpression)
-        {
-            string propertyName = ExtractPropertyName(propertyExpression);
-            OnPropertyChanged(propertyName);
-        }
-
-        public static string ExtractPropertyName<T>(Expression<Func<T>> propertyExpression)
-        {
-            if(propertyExpression == null)
+            if(SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
             {
-                throw new ArgumentNullException(nameof(propertyExpression));
+                IncludeFolders.RemoveAt(SelectedIncludeFoldersIndex);
             }
-
-            return ExtractPropertyNameFromLambda(propertyExpression);
+        }
+        
+        private void OnDefinesTextBox(EditableTextBlock textBox)
+        {
+            if(SelectedDefinesIndex >= 0 && SelectedDefinesIndex < Defines.Count)
+            {
+                Defines[SelectedDefinesIndex] = textBox.Text;
+            }
         }
 
-        internal static string ExtractPropertyNameFromLambda(LambdaExpression? expression)
+        private void OnAdditionalArgumentsTextBox(EditableTextBlock textBox)
         {
-            if(expression == null)
+            if(SelectedAdditionalArgumentsIndex >= 0 &&
+               SelectedAdditionalArgumentsIndex < AdditionalArguments.Count)
             {
-                throw new ArgumentNullException(nameof(expression));
+                AdditionalArguments[SelectedAdditionalArgumentsIndex] = textBox.Text;
             }
+        }
 
-            if(expression.Body is MemberExpression memberExpression && memberExpression.Member is PropertyInfo propertyInfo)
+        private void OnIncludeFoldersTextBox(EditableTextBlock textBox)
+        {
+            if(SelectedIncludeFoldersIndex >= 0 && SelectedIncludeFoldersIndex < IncludeFolders.Count)
             {
-                return propertyInfo.Name;
+                IncludeFolders[SelectedIncludeFoldersIndex] = textBox.Text;
             }
+        }
 
-            throw new ArgumentException("PropertySupport_NotMemberAccessExpression_Exception", nameof(expression));
+        private void OnSystemIncludeFoldersTextBox(EditableTextBlock textBox)
+        {
+            if(SelectedSystemIncludeFoldersIndex >= 0 &&
+               SelectedSystemIncludeFoldersIndex < SystemIncludeFolders.Count)
+            {
+                SystemIncludeFolders[SelectedSystemIncludeFoldersIndex] = textBox.Text;
+            }
+        }
+
+        private void OnSystemIncludeFoldersAddButton()
+        {
+            SystemIncludeFolders.Add(string.Empty);
+        }
+
+        private void OnSystemIncludeFoldersRemoveButton()
+        {
+            if(SelectedSystemIncludeFoldersIndex >= 0 && SelectedSystemIncludeFoldersIndex < SystemIncludeFolders.Count)
+            {
+                SystemIncludeFolders.RemoveAt(SelectedSystemIncludeFoldersIndex);
+            }
         }
 
         #endregion

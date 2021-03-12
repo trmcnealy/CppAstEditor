@@ -8,16 +8,24 @@
         xmlns:system="clr-namespace:System;assembly=System.Runtime"
         xmlns:cppAst="clr-namespace:CppAst;assembly=CppAst"
         xmlns:interopServices="clr-namespace:System.Runtime.InteropServices;assembly=System.Runtime"
-        xmlns:cSharp="clr-namespace:CppAst.CodeGen.CSharp"
+        xmlns:cSharp="clr-namespace:CppAst.CodeGen.CSharp;assembly=CppAst.CodeGen"
+        xmlns:prism="http://prismlibrary.com/"
+        prism:ViewModelLocator.AutoWireViewModel="True"
+        xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         Title="CppAst Editor"
-        Height="900"
+        Height="1000"
         Width="1500"
         d:DesignWidth="1500"
-        d:DesignHeight="900"
+        d:DesignHeight="1000"
         WindowStartupLocation="CenterScreen"
-        Closing="Window_Closing">
-    
+        >
+    <behaviors:Interaction.Triggers>
+        <behaviors:EventTrigger EventName="Closing">
+            <behaviors:InvokeCommandAction Command="{Binding Path=ClosingCommand}"/>
+        </behaviors:EventTrigger>
+    </behaviors:Interaction.Triggers>
+
     <Window.Resources>
         <ObjectDataProvider MethodName="GetValues"
                             ObjectType="{x:Type system:Enum}"
@@ -48,68 +56,73 @@
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
-    <TabControl TabStripPlacement="Left">
-        <TabControl.Resources>
-            <Style TargetType="{x:Type TabItem}">
-                <Setter Property="HeaderTemplate">
-                    <Setter.Value>
-                        <DataTemplate>
-                            <ContentPresenter Content="{TemplateBinding Content}">
-                                <ContentPresenter.LayoutTransform>
-                                    <RotateTransform Angle="270"/>
-                                </ContentPresenter.LayoutTransform>
-                            </ContentPresenter>
-                        </DataTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Padding"
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="45"/>
+        </Grid.RowDefinitions>
+        <TabControl TabStripPlacement="Left" Grid.Row="0">
+            <TabControl.Resources>
+                <Style TargetType="{x:Type TabItem}">
+                    <Setter Property="HeaderTemplate">
+                        <Setter.Value>
+                            <DataTemplate>
+                                <ContentPresenter Content="{TemplateBinding Content}">
+                                    <ContentPresenter.LayoutTransform>
+                                        <RotateTransform Angle="270"/>
+                                    </ContentPresenter.LayoutTransform>
+                                </ContentPresenter>
+                            </DataTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Padding"
                         Value="3"/>
-            </Style>
-        </TabControl.Resources>
+                </Style>
+            </TabControl.Resources>
 
-        <TabItem Header="CppAst Editor">
-            <Grid>
-                <TabControl>
-                    <TabControl.Resources>
-                        <Style TargetType="{x:Type TabItem}">
-                            <Setter Property="HeaderTemplate">
-                                <Setter.Value>
-                                    <DataTemplate>
-                                        <ContentPresenter Content="{TemplateBinding Content}">
-                                            <ContentPresenter.LayoutTransform>
-                                                <RotateTransform Angle="0"/>
-                                            </ContentPresenter.LayoutTransform>
-                                        </ContentPresenter>
-                                    </DataTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter Property="Padding"
+            <TabItem Header="CppAst Editor">
+                <Grid>
+                    <TabControl>
+                        <TabControl.Resources>
+                            <Style TargetType="{x:Type TabItem}">
+                                <Setter Property="HeaderTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <ContentPresenter Content="{TemplateBinding Content}">
+                                                <ContentPresenter.LayoutTransform>
+                                                    <RotateTransform Angle="0"/>
+                                                </ContentPresenter.LayoutTransform>
+                                            </ContentPresenter>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Padding"
                                     Value="3"/>
-                        </Style>
-                    </TabControl.Resources>
-                    <TabItem Header="Code">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="5"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                            </Style>
+                        </TabControl.Resources>
+                        <TabItem Header="Code">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                            <avalonEdit:TextEditor Grid.Column="0"
+                                <avalonEdit:TextEditor Grid.Column="0"
                                                    x:Name="CppTextBox"
                                                    Document="{Binding Path=CppText, UpdateSourceTrigger=PropertyChanged}"
                                                    FontFamily="Consolas"
                                                    FontSize="10pt"
                                                    SyntaxHighlighting="C++"
                                                    IsTabStop="False"
-                                                   ShowLineNumbers="True"
-                                                   TextChanged="CppTextBox_TextChanged"/>
+                                                   ShowLineNumbers="True"/>
 
-                            <GridSplitter Grid.Column="1"
+                                <GridSplitter Grid.Column="1"
                                           Width="5"
                                           HorizontalAlignment="Stretch"/>
 
-                            <avalonEdit:TextEditor Grid.Column="2"
+                                <avalonEdit:TextEditor Grid.Column="2"
                                                    x:Name="CsTextBox"
                                                    Document="{Binding Path=CSharpText, UpdateSourceTrigger=PropertyChanged}"
                                                    FontFamily="Consolas"
@@ -118,67 +131,69 @@
                                                    IsTabStop="False"
                                                    IsReadOnly="True"
                                                    ShowLineNumbers="True"/>
-                        </Grid>
-                    </TabItem>
-                    <TabItem Header="Options"
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="Options"
                              Visibility="Visible">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="5"/>
-                                <ColumnDefinition Width="1*"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid Grid.Column="0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="35"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="5"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="5"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="5"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-                                <StackPanel Grid.Row="0"
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="5"/>
+                                    <ColumnDefinition Width="1*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid Grid.Column="0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="35"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="5"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="5"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="5"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0"
                                             Orientation="Horizontal">
-                                    <Button Width="100"
+                                        <Button Width="100"
                                             Height="25"
                                             Content="Import Settings"
                                             Margin="5,5,5,5"
-                                            Click="ImportSettingsCommand_Executed"/>
-                                    <Button Width="100"
+                                            Command="{Binding Path=ImportSettingsCommand}"/>
+                                        <Button Width="100"
                                             Height="25"
                                             Content="Export Settings"
                                             Margin="5,5,5,5"
-                                            Click="ExportSettingsCommand_Executed"/>
-                                </StackPanel>
-                                <Grid Grid.Row="1"
+                                            Command="{Binding Path=ExportSettingsCommand}"/>
+                                    </StackPanel>
+                                    <Grid Grid.Row="1"
                                       HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch"
                                       MinHeight="150">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="26"/>
-                                        <RowDefinition Height="20"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Label Grid.Row="0"
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="26"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Grid.Row="0"
                                            Content="Defines"/>
-                                    <StackPanel Grid.Row="1"
+                                        <StackPanel Grid.Row="1"
                                                 Orientation="Horizontal"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch">
-                                        <Button Click="DefinesAddButton_OnClick"
+                                            <Button
                                                 Content="+"
                                                 Width="20"
                                                 Margin="0,0,3,0"
-                                                HorizontalAlignment="Left"/>
-                                        <Button Click="DefinesRemoveButton_OnClick"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=DefinesAddButtonCommand}"/>
+                                            <Button
                                                 Content="-"
                                                 Width="20"
                                                 Margin="3,0,0,0"
-                                                HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                    <ListView x:Name="DefinesListBox"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=DefinesRemoveButtonCommand}"/>
+                                        </StackPanel>
+                                        <ListView x:Name="DefinesListBox"
                                               Grid.Row="2"
                                               IsSynchronizedWithCurrentItem="True"
                                               ItemsSource="{Binding Path=Defines,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
@@ -188,71 +203,72 @@
                                               Width="Auto"
                                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                                        <ListView.Resources>
-                                            <Style TargetType="GridViewColumnHeader">
-                                                <Setter Property="Visibility"
+                                            <ListView.Resources>
+                                                <Style TargetType="GridViewColumnHeader">
+                                                    <Setter Property="Visibility"
                                                         Value="Collapsed"/>
-                                            </Style>
-                                        </ListView.Resources>
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="{x:Type ListViewItem}">
-                                                <Setter Property="HorizontalContentAlignment"
+                                                </Style>
+                                            </ListView.Resources>
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="{x:Type ListViewItem}">
+                                                    <Setter Property="HorizontalContentAlignment"
                                                         Value="Stretch"/>
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-                                        <ListView.View>
-                                            <GridView>
-                                                <GridViewColumn>
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <local:EditableTextBlock HorizontalAlignment="Stretch"
-                                                                                     TextChanged="DefinesTextBox_TextChanged">
-                                                                <local:EditableTextBlock.Text>
-                                                                    <Binding Path="Content"
-                                                                             FallbackValue=""
-                                                                             RelativeSource="{RelativeSource TemplatedParent}"
-                                                                             Mode="TwoWay"
-                                                                             UpdateSourceTrigger="PropertyChanged"/>
-                                                                </local:EditableTextBlock.Text>
-                                                            </local:EditableTextBlock>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                            </GridView>
-                                        </ListView.View>
-                                    </ListView>
-                                </Grid>
-                                <GridSplitter Grid.Row="2"
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <local:EditableTextBlock HorizontalAlignment="Stretch"
+                                                                                         Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}">
+                                                                    <behaviors:Interaction.Triggers>
+                                                                        <behaviors:EventTrigger EventName="TextChanged">
+                                                                            <behaviors:InvokeCommandAction Command="{Binding Path=DataContext.DefinesTextBoxCommand, ElementName=DefinesListBox}"
+                                                                                                           CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:EditableTextBlock}}"/>
+                                                                        </behaviors:EventTrigger>
+                                                                    </behaviors:Interaction.Triggers>
+                                                                </local:EditableTextBlock>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Grid>
+                                    <GridSplitter Grid.Row="2"
                                               VerticalAlignment="Stretch"
                                               HorizontalAlignment="Stretch"/>
-                                <Grid Grid.Row="3"
+                                    <Grid Grid.Row="3"
                                       HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch"
                                       MinHeight="150">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="26"/>
-                                        <RowDefinition Height="20"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Label Grid.Row="0"
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="26"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Grid.Row="0"
                                            Content="Additional Arguments"/>
 
-                                    <StackPanel Grid.Row="1"
+                                        <StackPanel Grid.Row="1"
                                                 Orientation="Horizontal"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch">
-                                        <Button Click="AdditionalArgumentsAddButton_OnClick"
+                                            <Button
                                                 Content="+"
                                                 Width="20"
                                                 Margin="0,0,3,0"
-                                                HorizontalAlignment="Left"/>
-                                        <Button Click="AdditionalArgumentsRemoveButton_OnClick"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=AdditionalArgumentsAddButtonCommand}"/>
+                                            <Button
                                                 Content="-"
                                                 Width="20"
                                                 Margin="3,0,0,0"
-                                                HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                    <ListView x:Name="AdditionalArgumentsListBox"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=AdditionalArgumentsRemoveButtonCommand}"/>
+                                        </StackPanel>
+                                        <ListView x:Name="AdditionalArgumentsListBox"
                                               Grid.Row="2"
                                               IsSynchronizedWithCurrentItem="True"
                                               ItemsSource="{Binding Path=AdditionalArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
@@ -262,65 +278,73 @@
                                               Width="Auto"
                                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                                        <ListView.Resources>
-                                            <Style TargetType="GridViewColumnHeader">
-                                                <Setter Property="Visibility"
+                                            <ListView.Resources>
+                                                <Style TargetType="GridViewColumnHeader">
+                                                    <Setter Property="Visibility"
                                                         Value="Collapsed"/>
-                                            </Style>
-                                        </ListView.Resources>
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="{x:Type ListViewItem}">
-                                                <Setter Property="HorizontalContentAlignment"
+                                                </Style>
+                                            </ListView.Resources>
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="{x:Type ListViewItem}">
+                                                    <Setter Property="HorizontalContentAlignment"
                                                         Value="Stretch"/>
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-                                        <ListView.View>
-                                            <GridView>
-                                                <GridViewColumn>
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <local:EditableTextBlock
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <local:EditableTextBlock
                                                                 Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                                HorizontalAlignment="Stretch"
-                                                                TextChanged="AdditionalArgumentsTextBox_TextChanged"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                            </GridView>
-                                        </ListView.View>
-                                    </ListView>
+                                                                HorizontalAlignment="Stretch">
+                                                                    <behaviors:Interaction.Triggers>
+                                                                        <behaviors:EventTrigger EventName="TextChanged">
+                                                                            <behaviors:InvokeCommandAction Command="{Binding Path=DataContext.AdditionalArgumentsTextBoxCommand, ElementName=AdditionalArgumentsListBox}"
+                                                                                                           CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:EditableTextBlock}}"/>
+                                                                        </behaviors:EventTrigger>
+                                                                    </behaviors:Interaction.Triggers>
+                                                                </local:EditableTextBlock>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
 
-                                </Grid>
-                                <GridSplitter Grid.Row="4"
+                                    </Grid>
+                                    <GridSplitter Grid.Row="4"
                                               VerticalAlignment="Stretch"
                                               HorizontalAlignment="Stretch"/>
-                                <Grid Grid.Row="5"
+                                    <Grid Grid.Row="5"
                                       HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch"
                                       MinHeight="150">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="26"/>
-                                        <RowDefinition Height="20"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Label Grid.Row="0"
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="26"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Grid.Row="0"
                                            Content="Include Folders"/>
-                                    <StackPanel Grid.Row="1"
+                                        <StackPanel Grid.Row="1"
                                                 Orientation="Horizontal"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch">
-                                        <Button Click="IncludeFoldersAddButton_OnClick"
+                                            <Button
                                                 Content="+"
                                                 Width="20"
                                                 Margin="0,0,3,0"
-                                                HorizontalAlignment="Left"/>
-                                        <Button Click="IncludeFoldersRemoveButton_OnClick"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=IncludeFoldersAddButtonCommand}"/>
+                                            <Button
                                                 Content="-"
                                                 Width="20"
                                                 Margin="3,0,0,0"
-                                                HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                    <ListView x:Name="IncludeFoldersListBox"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=IncludeFoldersRemoveButtonCommand}"/>
+                                        </StackPanel>
+                                        <ListView x:Name="IncludeFoldersListBox"
                                               Grid.Row="2"
                                               IsSynchronizedWithCurrentItem="True"
                                               ItemsSource="{Binding Path=IncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
@@ -332,66 +356,74 @@
                                               VerticalAlignment="Stretch"
                                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                                        <ListView.Resources>
-                                            <Style TargetType="GridViewColumnHeader">
-                                                <Setter Property="Visibility"
+                                            <ListView.Resources>
+                                                <Style TargetType="GridViewColumnHeader">
+                                                    <Setter Property="Visibility"
                                                         Value="Collapsed"/>
-                                            </Style>
-                                        </ListView.Resources>
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="{x:Type ListViewItem}">
-                                                <Setter Property="HorizontalContentAlignment"
+                                                </Style>
+                                            </ListView.Resources>
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="{x:Type ListViewItem}">
+                                                    <Setter Property="HorizontalContentAlignment"
                                                         Value="Stretch"/>
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-                                        <ListView.View>
-                                            <GridView>
-                                                <GridViewColumn>
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <local:EditableTextBlock
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <local:EditableTextBlock
                                                                 Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                                HorizontalAlignment="Stretch"
-                                                                TextChanged="IncludeFoldersTextBox_TextChanged"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                            </GridView>
-                                        </ListView.View>
-                                    </ListView>
+                                                                HorizontalAlignment="Stretch">
+                                                                    <behaviors:Interaction.Triggers>
+                                                                        <behaviors:EventTrigger EventName="TextChanged">
+                                                                            <behaviors:InvokeCommandAction Command="{Binding Path=DataContext.IncludeFoldersTextBoxCommand, ElementName=IncludeFoldersListBox}"
+                                                                                                           CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:EditableTextBlock}}"/>
+                                                                        </behaviors:EventTrigger>
+                                                                    </behaviors:Interaction.Triggers>
+                                                                </local:EditableTextBlock>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
 
-                                </Grid>
-                                <GridSplitter Grid.Row="6"
+                                    </Grid>
+                                    <GridSplitter Grid.Row="6"
                                               VerticalAlignment="Stretch"
                                               HorizontalAlignment="Stretch"/>
-                                <Grid Grid.Row="7"
+                                    <Grid Grid.Row="7"
                                       Grid.Column="0"
                                       HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch"
                                       MinHeight="150">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="26"/>
-                                        <RowDefinition Height="20"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Label Grid.Row="0"
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="26"/>
+                                            <RowDefinition Height="20"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Label Grid.Row="0"
                                            Content="System Include Folders"/>
-                                    <StackPanel Grid.Row="1"
+                                        <StackPanel Grid.Row="1"
                                                 Orientation="Horizontal"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch">
-                                        <Button Click="SystemIncludeFoldersAddButton_OnClick"
+                                            <Button
                                                 Content="+"
                                                 Width="20"
                                                 Margin="0,0,3,0"
-                                                HorizontalAlignment="Left"/>
-                                        <Button Click="SystemIncludeFoldersRemoveButton_OnClick"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=SystemIncludeFoldersAddButtonCommand}"/>
+                                            <Button
                                                 Content="-"
                                                 Width="20"
                                                 Margin="3,0,0,0"
-                                                HorizontalAlignment="Left"/>
-                                    </StackPanel>
-                                    <ListView x:Name="SystemIncludeFoldersListBox"
+                                                HorizontalAlignment="Left"
+                                                Command="{Binding Path=SystemIncludeFoldersRemoveButtonCommand}"/>
+                                        </StackPanel>
+                                        <ListView x:Name="SystemIncludeFoldersListBox"
                                               Grid.Row="2"
                                               IsSynchronizedWithCurrentItem="True"
                                               ItemsSource="{Binding Path=SystemIncludeFolders,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
@@ -401,172 +433,195 @@
                                               Width="Auto"
                                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
-                                        <ListView.Resources>
-                                            <Style TargetType="GridViewColumnHeader">
-                                                <Setter Property="Visibility"
+                                            <ListView.Resources>
+                                                <Style TargetType="GridViewColumnHeader">
+                                                    <Setter Property="Visibility"
                                                         Value="Collapsed"/>
-                                            </Style>
-                                        </ListView.Resources>
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="{x:Type ListViewItem}">
-                                                <Setter Property="HorizontalContentAlignment"
+                                                </Style>
+                                            </ListView.Resources>
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="{x:Type ListViewItem}">
+                                                    <Setter Property="HorizontalContentAlignment"
                                                         Value="Stretch"/>
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-                                        <ListView.View>
-                                            <GridView>
-                                                <GridViewColumn>
-                                                    <GridViewColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <local:EditableTextBlock
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn>
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <local:EditableTextBlock
                                                                 Text="{Binding Path=Content, RelativeSource = {RelativeSource TemplatedParent},UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
-                                                                HorizontalAlignment="Stretch"
-                                                                TextChanged="SystemIncludeFoldersTextBox_TextChanged"/>
-                                                        </DataTemplate>
-                                                    </GridViewColumn.CellTemplate>
-                                                </GridViewColumn>
-                                            </GridView>
-                                        </ListView.View>
-                                    </ListView>
+                                                                HorizontalAlignment="Stretch">
+                                                                    <behaviors:Interaction.Triggers>
+                                                                        <behaviors:EventTrigger EventName="TextChanged">
+                                                                            <behaviors:InvokeCommandAction Command="{Binding Path=DataContext.SystemIncludeFoldersTextBoxCommand, ElementName=SystemIncludeFoldersListBox}"
+                                                                                                           CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:EditableTextBlock}}"/>
+                                                                        </behaviors:EventTrigger>
+                                                                    </behaviors:Interaction.Triggers>
+                                                                </local:EditableTextBlock>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Grid>
                                 </Grid>
-                            </Grid>
 
-                            <GridSplitter Grid.Column="1"
+                                <GridSplitter Grid.Column="1"
                                           VerticalAlignment="Stretch"
                                           HorizontalAlignment="Stretch"/>
 
-                            <ScrollViewer Grid.Column="2"
+                                <ScrollViewer Grid.Column="2"
                                           VerticalScrollBarVisibility="Auto">
-                                <StackPanel Orientation="Vertical">
-                                    <Label Content="TargetCpu"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
+                                    <StackPanel Orientation="Vertical">
+                                        <Label Content="TargetCpu"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
                                               SelectedValue="{Binding Path=TargetCpu,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="TargetCpuSub"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
+                                        <Label Content="TargetCpuSub"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CppTargetCpuValues}}"
                                               SelectedValue="{Binding Path=TargetCpuSub,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="TargetVendor"/>
-                                    <TextBox Text="{Binding Path=TargetVendor,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="TargetSystem"/>
-                                    <TextBox Text="{Binding Path=TargetSystem,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="TargetAbi"/>
-                                    <TextBox Text="{Binding Path=TargetAbi,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=ParseAsCpp,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                        <Label Content="TargetVendor"/>
+                                        <TextBox Text="{Binding Path=TargetVendor,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="TargetSystem"/>
+                                        <TextBox Text="{Binding Path=TargetSystem,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="TargetAbi"/>
+                                        <TextBox Text="{Binding Path=TargetAbi,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=ParseAsCpp,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="ParseAsCpp"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=ParseComments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="ParseAsCpp"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=ParseComments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="ParseComments"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=ParseMacros,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="ParseComments"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=ParseMacros,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="ParseMacros"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=AutoSquashTypedef,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="ParseMacros"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=AutoSquashTypedef,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="AutoSquashTypedef"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=ParseSystemIncludes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="AutoSquashTypedef"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=ParseSystemIncludes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="ParseSystemIncludes"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=ParseAttributes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="ParseSystemIncludes"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=ParseAttributes,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="ParseAttributes"/>
-                                    </StackPanel>
+                                            <Label Content="ParseAttributes"/>
+                                        </StackPanel>
 
-                                    <Label Content="TypedefCodeGenKind"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CppTypedefCodeGenKindValues}}"
+                                        <Label Content="TypedefCodeGenKind"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CppTypedefCodeGenKindValues}}"
                                               SelectedValue="{Binding Path=TypedefCodeGenKind,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="DefaultOutputFilePath"/>
-                                    <TextBox Text="{Binding Path=DefaultOutputFilePath,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="DefaultNamespace"/>
-                                    <TextBox Text="{Binding Path=DefaultNamespace,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="DefaultClassLib"/>
-                                    <TextBox Text="{Binding Path=DefaultClassLib,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="DefaultDllImportNameAndArguments"/>
-                                    <TextBox Text="{Binding Path=DefaultDllImportNameAndArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="DefaultOutputFilePath"/>
+                                        <TextBox Text="{Binding Path=DefaultOutputFilePath,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="DefaultNamespace"/>
+                                        <TextBox Text="{Binding Path=DefaultNamespace,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="DefaultClassLib"/>
+                                        <TextBox Text="{Binding Path=DefaultClassLib,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
+                                        <Label Content="DefaultDllImportNameAndArguments"/>
+                                        <TextBox Text="{Binding Path=DefaultDllImportNameAndArguments,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
 
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=AllowFixedSizeBuffers,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=AllowFixedSizeBuffers,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="AllowFixedSizeBuffers"/>
-                                    </StackPanel>
-                                    <Label Content="DefaultCharSet"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CharSetValues}}"
+                                            <Label Content="AllowFixedSizeBuffers"/>
+                                        </StackPanel>
+                                        <Label Content="DefaultCharSet"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CharSetValues}}"
                                               SelectedValue="{Binding Path=DefaultCharSet,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
 
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=DispatchOutputPerInclude,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=DispatchOutputPerInclude,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="DispatchOutputPerInclude"/>
-                                    </StackPanel>
-                                    <Label Content="DefaultMarshalForString"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
+                                            <Label Content="DispatchOutputPerInclude"/>
+                                        </StackPanel>
+                                        <Label Content="DefaultMarshalForString"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
                                               SelectedValue="{Binding Path=DefaultMarshalForString,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
-                                    <Label Content="DefaultMarshalForBool"/>
-                                    <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
+                                        <Label Content="DefaultMarshalForBool"/>
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource CSharpUnmanagedKindValues}}"
                                               SelectedValue="{Binding Path=DefaultMarshalForBool,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"/>
 
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=GenerateAsInternal,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=GenerateAsInternal,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="GenerateAsInternal"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding Path=GenerateEnumItemAsFields,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                            <Label Content="GenerateAsInternal"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding Path=GenerateEnumItemAsFields,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                                   VerticalContentAlignment="Center"/>
-                                        <Label Content="GenerateEnumItemAsFields"/>
+                                            <Label Content="GenerateEnumItemAsFields"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                </StackPanel>
-                            </ScrollViewer>
+                                </ScrollViewer>
 
-                        </Grid>
+                            </Grid>
 
-                    </TabItem>
-                </TabControl>
-            </Grid>
-        </TabItem>
-        <TabItem Header="JitBuddy">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="5"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
 
-                <avalonEdit:TextEditor Grid.Row="0"
+            <TabItem Header="JitBuddy">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <avalonEdit:TextEditor Grid.Row="0"
                                        x:Name="CsJitTextBox"
-                                       Document="{Binding CsJitText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay,Delay=500}"
+                                       Document="{Binding Path=CsJitText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay,Delay=500}"
                                        FontFamily="Consolas"
                                        FontSize="10pt"
                                        SyntaxHighlighting="C#"
                                        IsTabStop="False"
-                                       DocumentChanged="CsJitTextBox_DocumentChanged"
-                                       TextChanged="CsJitTextBox_TextChanged"
                                        ShowLineNumbers="True"/>
 
-                <GridSplitter Grid.Row="1"
+                    <GridSplitter Grid.Row="1"
                               Width="5"
                               HorizontalAlignment="Stretch"/>
 
-                <avalonEdit:TextEditor Grid.Row="2"
+                    <avalonEdit:TextEditor Grid.Row="2"
                                        x:Name="AsmJitTextBox"
-                                       Document="{Binding AsmJitText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
+                                       Document="{Binding Path=AsmJitText,UpdateSourceTrigger=PropertyChanged, Mode =TwoWay}"
                                        FontFamily="Consolas"
                                        FontSize="10pt"
                                        SyntaxHighlighting="C++"
                                        IsTabStop="False"
-                                       DocumentChanged="AsmJitTextBox_DocumentChanged"
                                        IsReadOnly="True"
                                        ShowLineNumbers="True"/>
-            </Grid>
-        </TabItem>
-    </TabControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1"
+                    Command="{Binding Path=ConvertCodeCppToCsCommand}"
+                    Content="Convert Cpp to C#"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Width="150"
+                    Height="32"
+                    Margin="5"/>
+        </Grid>
+    </Grid>
 </Window>

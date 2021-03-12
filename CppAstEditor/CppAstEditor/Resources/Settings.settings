@@ -14,5 +14,74 @@
     <Setting Name="SystemIncludeFolders" Type="System.Collections.Specialized.StringCollection" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="TargetCpu" Type="CppAst.CppTargetCpu" Scope="User">
+      <Value Profile="(Default)">X86_64</Value>
+    </Setting>
+    <Setting Name="TargetCpuSub" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TargetVendor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">w64</Value>
+    </Setting>
+    <Setting Name="TargetSystem" Type="System.String" Scope="User">
+      <Value Profile="(Default)">windows</Value>
+    </Setting>
+    <Setting Name="TargetAbi" Type="System.String" Scope="User">
+      <Value Profile="(Default)">gnu</Value>
+    </Setting>
+    <Setting Name="ParseAsCpp" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ParseComments" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="ParseMacros" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="AutoSquashTypedef" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ParseSystemIncludes" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="ParseAttributes" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="TypedefCodeGenKind" Type="CppAst.CodeGen.CSharp.CppTypedefCodeGenKind" Scope="User">
+      <Value Profile="(Default)">Wrap</Value>
+    </Setting>
+    <Setting Name="DefaultOutputFilePath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">/LibNative.generated.cs</Value>
+    </Setting>
+    <Setting Name="DefaultNamespace" Type="System.String" Scope="User">
+      <Value Profile="(Default)">LibNative</Value>
+    </Setting>
+    <Setting Name="DefaultClassLib" Type="System.String" Scope="User">
+      <Value Profile="(Default)">libnative</Value>
+    </Setting>
+    <Setting Name="DefaultDllImportNameAndArguments" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="AllowFixedSizeBuffers" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DefaultCharSet" Type="System.Runtime.InteropServices.CharSet" Scope="User">
+      <Value Profile="(Default)">Ansi</Value>
+    </Setting>
+    <Setting Name="DispatchOutputPerInclude" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DefaultMarshalForString" Type="CppAst.CodeGen.CSharp.CSharpUnmanagedKind" Scope="User">
+      <Value Profile="(Default)">LPStr</Value>
+    </Setting>
+    <Setting Name="DefaultMarshalForBool" Type="CppAst.CodeGen.CSharp.CSharpUnmanagedKind" Scope="User">
+      <Value Profile="(Default)">Bool</Value>
+    </Setting>
+    <Setting Name="GenerateAsInternal" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="GenerateEnumItemAsFields" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
